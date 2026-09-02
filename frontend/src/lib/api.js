@@ -125,13 +125,48 @@ export async function getDiseaseHistory() {
   return apiFetch('/disease/history')
 }
 
-export async function analyzeSoil(payload) {
-  if (!endpoints.soil) throw new Error('SERVICE_NOT_CONFIGURED')
-  return legacyRequest(endpoints.soil, {
+// ── Soil (Phase 4) ───────────────────────────────────────────────────────────
+// POST /soil/report — multipart image upload → Cloudinary + OCR → parsed fields (no analysis yet)
+export async function uploadSoilReport(file) {
+  if (!BACKEND) throw Object.assign(new Error('SERVICE_NOT_CONFIGURED'), { status: 0 })
+  const tokens = getTokens()
+  if (!tokens?.access_token) throw Object.assign(new Error('Not authenticated'), { status: 401 })
+
+  const body = new FormData()
+  body.append('image', file)
+
+  const res = await fetch(`${BACKEND}/soil/report`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+    body,
+  })
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`
+    try { const j = await res.json(); detail = j.detail || JSON.stringify(j) } catch {}
+    throw Object.assign(new Error(detail), { status: res.status })
+  }
+  return res.json()
+}
+
+// POST /soil/report/confirm — farmer confirms/corrects OCR values → returns analysis
+export async function confirmSoilReport(payload) {
+  return apiFetch('/soil/report/confirm', {
+    method: 'POST',
     body: JSON.stringify(payload),
   })
+}
+
+// POST /soil/questionnaire — qualitative path
+export async function submitSoilQuestionnaire(payload) {
+  return apiFetch('/soil/questionnaire', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+// GET /soil/latest
+export async function getSoilLatest() {
+  return apiFetch('/soil/latest')
 }
 
 export async function getWeather(query) {
