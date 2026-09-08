@@ -85,3 +85,56 @@ def get_me(current_user: User = Depends(get_current_user), db: Session = Depends
         "latitude": farm.latitude,
         "longitude": farm.longitude
     }
+
+from app.schemas.auth import ProfileUpdateRequest
+
+@router.patch("/profile", response_model=MeResponse)
+def update_profile(req: ProfileUpdateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    farm = db.query(Farm).filter(Farm.user_id == current_user.user_id).first()
+    if not farm:
+        raise HTTPException(status_code=500, detail="Farm not found for user")
+
+    # Update user fields
+    user_fields = ["name", "phone", "address", "village", "district", "state"]
+    for field in user_fields:
+        val = getattr(req, field, None)
+        if val is not None:
+            setattr(current_user, field, val)
+
+    # Update farm fields
+    if req.farm_name is not None:
+        farm.farm_name = req.farm_name
+    if req.latitude is not None:
+        farm.latitude = req.latitude
+    if req.longitude is not None:
+        farm.longitude = req.longitude
+
+    db.commit()
+    db.refresh(current_user)
+    db.refresh(farm)
+
+    return {
+        "user_id": current_user.user_id,
+        "name": current_user.name,
+        "email": current_user.email,
+        "village": current_user.village,
+        "district": current_user.district,
+        "state": current_user.state,
+        "farm_id": farm.farm_id,
+        "farm_name": farm.farm_name,
+        "latitude": farm.latitude,
+        "longitude": farm.longitude
+    }
+
+
+from app.schemas.auth import ChangePasswordRequest
+
+@router.post("/change-password")
+def change_password(req: ChangePasswordRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not verify_password(req.current_password, current_user.password_hash):
+        raise HTTPException(status_code=401, detail="Incorrect current password")
+    
+    current_user.password_hash = hash_password(req.new_password)
+    db.commit()
+    
+    return {"message": "Password changed successfully"}

@@ -37,3 +37,20 @@ class MeResponse(BaseModel):
     farm_name: str
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+
+
+class ProfileUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    village: Optional[str] = None
+    district: Optional[str] = None
+    state: Optional[str] = None
+    farm_name: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+

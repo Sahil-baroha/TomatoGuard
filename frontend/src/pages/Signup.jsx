@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, MapPin, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { AuthShell } from './Login'
 import { signup } from '../lib/api'
 
@@ -8,7 +8,27 @@ export default function Signup() {
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [locState, setLocState] = useState('idle') // 'idle' | 'loading' | 'captured' | 'denied'
+  const [coords, setCoords] = useState({ latitude: null, longitude: null })
   const nav = useNavigate()
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setLocState('denied')
+      return
+    }
+    setLocState('loading')
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude })
+        setLocState('captured')
+      },
+      () => {
+        setLocState('denied')
+      },
+      { timeout: 10000 }
+    )
+  }
 
   const submit = async e => {
     e.preventDefault()
@@ -31,7 +51,12 @@ export default function Signup() {
 
     setLoading(true)
     try {
-      await signup({ name, email, password, farm_name: farmName })
+      const payload = { name, email, password, farm_name: farmName }
+      if (coords.latitude !== null && coords.longitude !== null) {
+        payload.latitude = coords.latitude
+        payload.longitude = coords.longitude
+      }
+      await signup(payload)
       nav('/dashboard')
     } catch (err) {
       if (err.status === 409) {
@@ -61,6 +86,37 @@ export default function Signup() {
           <span className="mb-2 block text-sm font-bold">Farm name</span>
           <input name="farm_name" className="input" placeholder="My Tomato Farm" />
         </label>
+
+        {/* Farm location — optional, one tap */}
+        <div className="rounded-2xl border border-stone-200 p-4 dark:border-stone-700">
+          <p className="mb-2 text-sm font-bold">Farm location <span className="font-normal text-stone-400">(optional — required for Weather)</span></p>
+          {locState === 'idle' && (
+            <button
+              type="button"
+              onClick={requestLocation}
+              className="flex items-center gap-2 rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold hover:bg-stone-50 dark:border-stone-600 dark:hover:bg-stone-800"
+            >
+              <MapPin size={16} className="text-red-700" />
+              Use my location
+            </button>
+          )}
+          {locState === 'loading' && (
+            <p className="text-sm text-stone-400">Requesting location…</p>
+          )}
+          {locState === 'captured' && (
+            <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+              <CheckCircle2 size={16} />
+              Location captured ✓ ({coords.latitude.toFixed(4)}, {coords.longitude.toFixed(4)})
+            </div>
+          )}
+          {locState === 'denied' && (
+            <div className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+              <span>Location access denied. You can still sign up — add your location later from your Profile page to enable weather data.</span>
+            </div>
+          )}
+        </div>
+
         <label className="block">
           <span className="mb-2 block text-sm font-bold">Password</span>
           <div className="relative">
