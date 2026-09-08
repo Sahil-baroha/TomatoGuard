@@ -159,27 +159,65 @@ export default function Disease() {
         <div className="rounded-3xl bg-[#421c15] p-7 text-white">
           {result ? (
             <>
-              <CheckCircle2 className="text-green-300" size={36} />
-              <p className="mt-5 text-xs font-black uppercase tracking-[.16em] text-red-300">Model result</p>
-              <h2 className="mt-2 text-3xl font-black">{result.predicted_disease}</h2>
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3">
+                <CheckCircle2 className="mt-1 shrink-0 text-green-300" size={28} />
+                {result.severity && (
+                  <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black uppercase tracking-widest ${
+                    result.severity === 'High'
+                      ? 'bg-red-600 text-white'
+                      : result.severity === 'Moderate'
+                      ? 'bg-yellow-500 text-stone-900'
+                      : 'bg-green-600 text-white'
+                  }`}>
+                    {result.severity} severity
+                  </span>
+                )}
+              </div>
+
+              <p className="mt-4 text-xs font-black uppercase tracking-[.16em] text-red-300">Model result</p>
+              <h2 className="mt-1 text-2xl font-black leading-tight">{result.predicted_disease}</h2>
+
+              {/* Confidence + warning */}
               {result.confidence !== null && result.confidence !== undefined && (
-                <p className="mt-3">
+                <p className="mt-2 text-sm">
                   Confidence: <b>{Math.round(result.confidence)}%</b>
                 </p>
               )}
+              {result.low_confidence_warning && (
+                <div className="mt-3 flex gap-2 rounded-xl bg-yellow-500/20 p-3 text-yellow-200">
+                  <AlertTriangle size={17} className="mt-0.5 shrink-0" />
+                  <p className="text-xs leading-relaxed">
+                    <b>Low confidence detected.</b> For a more accurate result, please retake the photo in bright, natural daylight with the leaf filling the frame and in sharp focus.
+                  </p>
+                </div>
+              )}
+
+              {/* Description */}
               {result.description && (
-                <div className="mt-6 rounded-2xl bg-white/10 p-5">
-                  <p className="text-xs font-black uppercase tracking-widest text-red-300 mb-2">Description</p>
-                  <p className="leading-7 text-red-50">{result.description}</p>
+                <div className="mt-5 rounded-2xl bg-white/10 p-4">
+                  <p className="mb-1 text-xs font-black uppercase tracking-widest text-red-300">About this disease</p>
+                  <p className="text-sm leading-7 text-red-50">{result.description}</p>
                 </div>
               )}
-              {result.immediate_action && (
-                <div className="mt-4 rounded-2xl bg-white/10 p-5">
-                  <p className="text-xs font-black uppercase tracking-widest text-red-300 mb-2">Immediate action</p>
-                  <p className="leading-7 text-red-50">{result.immediate_action}</p>
+
+              {/* Treatment plan */}
+              {result.treatment_plan && (
+                <div className="mt-3 rounded-2xl bg-white/10 p-4">
+                  <p className="mb-1 text-xs font-black uppercase tracking-widest text-red-300">Treatment & action plan</p>
+                  <p className="text-sm leading-7 text-red-50">{result.treatment_plan}</p>
                 </div>
               )}
-              <p className="mt-4 text-xs text-red-200/60">Scan #{result.scan_id} · saved to your history</p>
+
+              {/* Prevention tips */}
+              {result.prevention_tips && (
+                <div className="mt-3 rounded-2xl bg-white/10 p-4">
+                  <p className="mb-1 text-xs font-black uppercase tracking-widest text-red-300">Prevention tips</p>
+                  <p className="text-sm leading-7 text-red-50">{result.prevention_tips}</p>
+                </div>
+              )}
+
+              <p className="mt-5 text-xs text-red-200/50">Scan #{result.scan_id} · saved to your history</p>
             </>
           ) : (
             <div className="grid h-full min-h-80 place-items-center text-center">

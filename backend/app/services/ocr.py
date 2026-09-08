@@ -21,10 +21,9 @@ except ImportError:
 try:
     import google.generativeai as genai
     from app.core.config import settings
-    # Match your settings config key (e.g. GEMINI_API_KEY or GEMINI_KEY)
-    ApiKey = getattr(settings, "GEMINI_API_KEY", getattr(settings, "GEMINI_KEY", None))
-    if api_key:
-        genai.configure(api_key=api_key)
+    _gemini_key = settings.GEMINI_KEY
+    if _gemini_key:
+        genai.configure(api_key=_gemini_key)
         _GEMINI_AVAILABLE = True
 except ImportError:
     pass
