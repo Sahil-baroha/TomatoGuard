@@ -8,7 +8,7 @@ import Soil from './pages/Soil'
 import Weather from './pages/Weather'
 import Tasks from './pages/Tasks'
 import Schemes from './pages/Schemes'
-import Reports from './pages/Reports'
+import History from './pages/History'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
 import AppLayout from './components/AppLayout'
@@ -50,7 +50,7 @@ export default function App() {
         <Route path="/weather" element={<Weather />} />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/schemes" element={<Schemes />} />
-        <Route path="/reports" element={<Reports />} />
+        <Route path="/history" element={<History />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
       </Route>

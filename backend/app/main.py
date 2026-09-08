@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, admin_auth, admin_diseases, admin_farmers, dashboard, disease, soil
+from app.api import auth, admin_auth, admin_diseases, admin_farmers, dashboard, disease, soil, weather
 
 app = FastAPI(title="TomatoGuard AI API")
 
@@ -23,3 +23,6 @@ app.include_router(admin_farmers.router, prefix="/admin/farmers", tags=["admin_f
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(disease.router, prefix="/disease", tags=["disease"])
 app.include_router(soil.router, prefix="/soil", tags=["soil"])
+app.include_router(weather.router, prefix="/weather", tags=["weather"])
+from app.api import history
+app.include_router(history.router, prefix="/history", tags=["history"])

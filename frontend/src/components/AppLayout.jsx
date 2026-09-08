@@ -12,7 +12,7 @@ const links = [
   ['/weather','Weather',CloudSun],
   ['/tasks','Daily Tasks',ListChecks],
   ['/schemes','Govt. Schemes',Landmark],
-  ['/reports','Reports',FileBarChart],
+  ['/history','History',FileBarChart],
 ]
 
 export default function AppLayout(){

@@ -169,8 +169,39 @@ export async function getSoilLatest() {
   return apiFetch('/soil/latest')
 }
 
-export async function getWeather(query) {
-  if (!endpoints.weather) throw new Error('SERVICE_NOT_CONFIGURED')
-  const join = endpoints.weather.includes('?') ? '&' : '?'
-  return legacyRequest(`${endpoints.weather}${join}location=${encodeURIComponent(query)}`)
+// ── Profile update (PATCH /auth/profile) ────────────────────────────────────
+export async function patchProfile(payload) {
+  return apiFetch('/auth/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+// ── Weather (Phase 5) ────────────────────────────────────────────────────────
+// GET /weather/current — inserts a weather_records row, returns it.
+export async function getWeatherCurrent() {
+  return apiFetch('/weather/current')
+}
+
+// GET /weather/forecast — 5-day daily forecast, does NOT write to DB.
+export async function getWeatherForecast() {
+  return apiFetch('/weather/forecast')
+}
+
+// ── Change Password (POST /auth/change-password) ─────────────────────────────
+export async function changePassword(payload) {
+  return apiFetch('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+// ── History (GET /history) ───────────────────────────────────────────────────
+export async function getHistory(type = null, from = null, to = null) {
+  const params = new URLSearchParams()
+  if (type) params.append('type', type)
+  if (from) params.append('from', from)
+  if (to) params.append('to', to)
+  const qs = params.toString()
+  return apiFetch(`/history${qs ? '?' + qs : ''}`)
 }
