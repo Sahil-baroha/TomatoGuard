@@ -24,3 +24,6 @@ Thumbs.db
 
 # Other
 check_tables.js
+
+*.png
+*.pth
