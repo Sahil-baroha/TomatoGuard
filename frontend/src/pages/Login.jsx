@@ -59,7 +59,7 @@ export default function Login() {
             </button>
           </div>
         </Field>
-        {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {error && <p className="rounded-xl bg-red-50 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
         <button
           disabled={loading}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-700 py-3 font-black text-white disabled:opacity-50"
@@ -86,13 +86,13 @@ export function AuthShell({ title, subtitle, children }) {
         </div>
         <p className="text-sm text-red-100">TomatoGuard AI Decision Support System</p>
       </div>
-      <div className="flex items-center justify-center bg-[#faf9f5] p-6">
+      <div className="flex items-center justify-center bg-[#faf9f5] dark:bg-stone-950 text-stone-800 dark:text-stone-100 p-6">
         <div className="w-full max-w-md">
           <div className="mb-8 lg:hidden"><Brand /></div>
           <h1 className="text-4xl font-black">{title}</h1>
-          <p className="mt-2 text-stone-500">{subtitle}</p>
-          <div className="mt-8 rounded-3xl bg-white p-7 shadow-xl">{children}</div>
-          <Link to="/" className="mt-6 block text-center text-sm font-bold text-red-700">← Back to landing page</Link>
+          <p className="mt-2 text-stone-500 dark:text-stone-400">{subtitle}</p>
+          <div className="mt-8 rounded-3xl bg-white dark:bg-stone-900 p-7 shadow-xl">{children}</div>
+          <Link to="/" className="mt-6 block text-center text-sm font-bold text-red-700 dark:text-red-400">← Back to landing page</Link>
         </div>
       </div>
     </div>

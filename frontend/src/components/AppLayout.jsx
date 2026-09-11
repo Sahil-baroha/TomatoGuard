@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ScanLine, FlaskConical, CloudSun, ListChecks, Landmark, FileBarChart, Settings, UserRound, LogOut, Menu, X, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, ScanLine, FlaskConical, CloudSun, ListChecks, Landmark, FileBarChart, Settings, UserRound, LogOut, Menu, X, ChevronDown, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import Brand from './Brand'
 import NotificationMenu from './NotificationMenu'
@@ -10,6 +10,7 @@ const links = [
   ['/disease','Disease Detection',ScanLine],
   ['/soil','Soil Analysis',FlaskConical],
   ['/weather','Weather',CloudSun],
+  ['/recommendations','Recommendations',Sparkles],
   ['/tasks','Daily Tasks',ListChecks],
   ['/schemes','Govt. Schemes',Landmark],
   ['/history','History',FileBarChart],

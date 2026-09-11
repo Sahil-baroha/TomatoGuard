@@ -70,11 +70,11 @@ docs/                                     models/  one file per table
 - `PATCH /admin/farmers/{user_id}/status` — admin — in: is_active bool
 
 ### Dashboard
-- `GET /dashboard/summary` — farmer — out: latest_disease_scan / latest_soil_analysis / latest_weather, each object or null
+- `GET /dashboard/summary` — farmer — out: latest_disease_scan (scan_id, predicted_disease, confidence, scan_date, image_path, severity) / latest_soil_analysis / latest_weather, each object or null **+ recommendation_preview {health_status, summary} or null** (computed via same deterministic rule as /recommendations/latest, null if no scan/soil data at all)
 
 ### Disease (Phase 3)
 - `POST /disease/analyze` — farmer — in: multipart image — uploads to Cloudinary, runs model, looks up disease_id, inserts row — out: scan_id, predicted_disease, confidence, description, immediate_action
-- `GET /disease/history` — farmer — out: array, newest first
+- `GET /disease/history` — farmer — out: array newest first, each item: scan_id, predicted_disease, confidence, scan_date, **image_path, severity, recommendation**
 
 ### Soil (Phase 4)
 - `POST /soil/report` — farmer — in: multipart image — uploads to Cloudinary, OCRs, does NOT save analysis yet — out: soil_report_id, raw_ocr_text, parsed fields (editable)
@@ -88,7 +88,7 @@ docs/                                     models/  one file per table
 - WMO `weather_code` integers are mapped to human-readable strings in `backend/app/services/weather_client.py` (function `code_to_condition`). Full WMO table is in that file. Do not add a `WEATHER_API_KEY` or `OPENWEATHERMAP_API_KEY` env var — they do not exist and are not needed.
 
 ### Recommendations (Phase 6)
-- `GET /recommendations/latest` — farmer — computed fresh from latest disease/soil/weather rows, no persistence — 404 if all three missing, partial result if some present
+- `GET /recommendations/latest` — farmer — computed fresh from latest disease/soil/weather rows, no persistence — 404 if all three missing, partial result if some present — **response now includes data_used {disease, soil, weather} passthrough of raw source figures**
 
 ### History (Phase 7)
 - `GET /history?type=&from=&to=` — farmer — merged/sorted across all 3 data tables (disease_scans, soil_analyses, weather_records). Out: array of objects with `id`, `normalized_date`, `type`, `quick_status`, and type-specific `details`.

@@ -1,102 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Leaf, Droplets, CloudSun, Lightbulb, ScanLine, FlaskConical, Wind, AlertTriangle, Loader2 } from 'lucide-react'
+import {
+  Leaf, Droplets, CloudSun, Lightbulb,
+  ScanLine, FlaskConical, Wind, AlertTriangle, Loader2,
+  ChevronRight, ArrowRight, ShieldCheck, ShieldAlert, ShieldX
+} from 'lucide-react'
 import Page from '../components/Page'
 import { getDashboardSummary, clearTokens } from '../lib/api'
 
-// ── Empty-state messages per card ────────────────────────────────────────────
-// Each is distinct — spec says "never a generic spinner stuck forever, not a fake zero"
-const EMPTY_STATES = {
-  disease: {
-    icon: Leaf,
-    label: 'No scan yet',
-    hint: 'Take your first leaf photo to check for disease.',
-    action: '/disease',
-    actionLabel: 'Scan a leaf',
-    tone: 'green',
-  },
-  soil: {
-    icon: Droplets,
-    label: 'No soil analysis yet',
-    hint: 'Upload a soil report or answer the questionnaire.',
-    action: '/soil',
-    actionLabel: 'Check soil',
-    tone: 'blue',
-  },
-  weather: {
-    icon: CloudSun,
-    label: 'No weather data yet',
-    hint: 'Fetch current conditions for your farm location.',
-    action: '/weather',
-    actionLabel: 'View weather',
-    tone: 'amber',
-  },
-  recommendation: {
-    icon: Lightbulb,
-    label: 'No recommendation yet',
-    hint: 'Complete at least one scan or analysis to see a recommendation.',
-    action: null,
-    tone: 'purple',
-  },
-}
-
-const TONE_CLASSES = {
-  green:  { bg: 'bg-green-50 dark:bg-green-950/30',  icon: 'text-green-600', badge: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  blue:   { bg: 'bg-blue-50 dark:bg-blue-950/30',    icon: 'text-blue-600',  badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  amber:  { bg: 'bg-amber-50 dark:bg-amber-950/30',  icon: 'text-amber-600', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
-  purple: { bg: 'bg-purple-50 dark:bg-purple-950/30',icon: 'text-purple-600',badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
-}
-
-function SummaryCard({ config, value, loading }) {
-  const { icon: Icon, label, hint, action, actionLabel, tone } = config
-  const nav = useNavigate()
-  const tc = TONE_CLASSES[tone]
-
-  return (
-    <div className={`card flex flex-col gap-3 p-6 ${tc.bg}`}>
-      <div className="flex items-center gap-3">
-        <div className={`rounded-2xl p-2 bg-white/70 dark:bg-black/20 ${tc.icon}`}>
-          <Icon size={22} />
-        </div>
-        <span className="text-sm font-bold text-stone-500">{label}</span>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center gap-2 text-stone-400">
-          <Loader2 size={16} className="animate-spin" />
-          <span className="text-sm">Loading…</span>
-        </div>
-      ) : value ? (
-        // Real data state
-        <div className="flex flex-col gap-1">
-          {value.lines.map((line, i) => (
-            <p key={i} className={i === 0 ? 'font-black text-lg leading-tight' : 'text-sm text-stone-500'}>
-              {line}
-            </p>
-          ))}
-          {value.badge && (
-            <span className={`mt-1 inline-block self-start rounded-full px-3 py-1 text-xs font-black ${tc.badge}`}>
-              {value.badge}
-            </span>
-          )}
-        </div>
-      ) : (
-        // Genuine empty state — no fabricated data
-        <div className="flex flex-col gap-2">
-          <p className="text-sm text-stone-500 leading-6">{hint}</p>
-          {action && (
-            <button
-              onClick={() => nav(action)}
-              className="mt-1 self-start rounded-xl bg-red-700 px-4 py-2 text-sm font-black text-white"
-            >
-              {actionLabel}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
+// ── Dashboard Component ────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const user = (() => { try { return JSON.parse(localStorage.getItem('tomatoUser') || '{}') } catch { return {} } })()
@@ -126,55 +38,33 @@ export default function Dashboard() {
     return () => { cancelled = true }
   }, [])
 
-  // Build per-card values from the API response (null if no data)
-  const diseaseValue = summary?.latest_disease_scan ? {
-    lines: [
-      summary.latest_disease_scan.predicted_disease,
-      `Confidence: ${summary.latest_disease_scan.confidence !== null
-        ? `${Math.round(summary.latest_disease_scan.confidence)}%`
-        : '—'}`,
-      new Date(summary.latest_disease_scan.scan_date).toLocaleDateString(),
-    ],
-    badge: null,
-  } : null
+  // Derived values
+  const disease = summary?.latest_disease_scan
+  const soil = summary?.latest_soil_analysis
+  const weather = summary?.latest_weather
+  const rp = summary?.recommendation_preview
 
-  const soilValue = summary?.latest_soil_analysis ? {
-    lines: [
-      summary.latest_soil_analysis.predicted_soil_condition || 'Analysis available',
-      summary.latest_soil_analysis.fertilizer_recommendation
-        ? `Fertilizer: ${summary.latest_soil_analysis.fertilizer_recommendation.slice(0, 60)}…`
-        : '',
-      summary.latest_soil_analysis.analysis_date
-        ? new Date(summary.latest_soil_analysis.analysis_date).toLocaleDateString()
-        : '',
-    ].filter(Boolean),
-    badge: summary.latest_soil_analysis.predicted_soil_condition || null,
-  } : null
+  const hasAnyData = !!(disease || soil || weather)
 
-  const weatherValue = summary?.latest_weather ? {
-    lines: [
-      summary.latest_weather.temperature_c !== null
-        ? `${summary.latest_weather.temperature_c}°C`
-        : 'Condition recorded',
-      summary.latest_weather.weather_condition || '',
-      summary.latest_weather.recorded_at
-        ? new Date(summary.latest_weather.recorded_at).toLocaleDateString()
-        : '',
-    ].filter(Boolean),
-    badge: summary.latest_weather.weather_condition || null,
-  } : null
-
-  // Recommendation card: available only when at least one source has data
-  const hasAnyData = !!(summary?.latest_disease_scan || summary?.latest_soil_analysis || summary?.latest_weather)
-  const recommendationValue = hasAnyData ? {
-    lines: ['View your combined recommendation'],
-    badge: null,
-  } : null
+  // Status mappings
+  const StatusIcon = rp?.health_status === 'critical' ? ShieldX :
+                     rp?.health_status === 'at-risk' ? ShieldAlert :
+                     rp?.health_status === 'good' ? ShieldCheck :
+                     Lightbulb
+  const statusColor = rp?.health_status === 'critical' ? 'text-red-600 bg-red-100 dark:bg-red-900 dark:text-red-200' :
+                      rp?.health_status === 'at-risk' ? 'text-yellow-700 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-200' :
+                      rp?.health_status === 'good' ? 'text-green-700 bg-green-100 dark:bg-green-900 dark:text-green-200' :
+                      'text-purple-600 bg-purple-100 dark:bg-purple-900 dark:text-purple-200'
+  
+  const statusLabel = rp?.health_status === 'critical' ? 'Critical Attention Needed' :
+                      rp?.health_status === 'at-risk' ? 'At Risk - Needs Attention' :
+                      rp?.health_status === 'good' ? 'Crop Health is Good' :
+                      hasAnyData ? 'Recommendations Available' : 'No Data Available'
 
   return (
     <Page
-      title={`Farm Dashboard${user.name ? ` — ${user.name.split(' ')[0]}` : ''}`}
-      sub="Your latest crop, soil, weather and recommendation information."
+      title={`Hello, ${user.name ? user.name.split(' ')[0] : 'Farmer'}!`}
+      sub="Here is the latest snapshot of your farm's health."
     >
       {apiError && (
         <div className="mb-5 flex items-start gap-3 rounded-2xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
@@ -183,25 +73,156 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard config={EMPTY_STATES.disease}       value={diseaseValue}        loading={loading} />
-        <SummaryCard config={EMPTY_STATES.soil}          value={soilValue}           loading={loading} />
-        <SummaryCard config={EMPTY_STATES.weather}       value={weatherValue}        loading={loading} />
-        <SummaryCard config={EMPTY_STATES.recommendation} value={recommendationValue} loading={loading} />
-      </div>
+      {loading ? (
+        <div className="flex items-center gap-2 text-stone-400 p-6">
+          <Loader2 size={16} className="animate-spin" />
+          <span className="text-sm font-bold">Loading dashboard...</span>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          
+          {/* Hero Section: Recommendations */}
+          <div 
+            onClick={() => hasAnyData && nav('/recommendations')}
+            className={`card overflow-hidden flex flex-col md:flex-row items-center gap-6 p-6 md:p-8 cursor-pointer border-2 transition-all hover:shadow-md ${
+              rp?.health_status === 'critical' ? 'border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/50' :
+              rp?.health_status === 'at-risk' ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900/50' :
+              rp?.health_status === 'good' ? 'border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900/50' :
+              'border-stone-200 dark:border-stone-800 hover:border-red-200 dark:hover:border-red-900'
+            }`}
+          >
+            <div className={`p-4 rounded-2xl shrink-0 ${statusColor}`}>
+              <StatusIcon size={40} />
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <p className="text-xs font-black uppercase tracking-widest text-stone-500 mb-1">Overall Farm Status</p>
+              <h2 className="text-2xl md:text-3xl font-black mb-2">{statusLabel}</h2>
+              <p className="text-stone-600 dark:text-stone-300 text-sm md:text-base">
+                {rp?.summary || (hasAnyData ? 'View your combined recommendations.' : 'Complete a disease scan or soil analysis to get started.')}
+              </p>
+            </div>
+            {hasAnyData && (
+              <div className="shrink-0 flex items-center justify-center bg-white dark:bg-stone-900 rounded-full h-12 w-12 shadow-sm">
+                <ArrowRight size={24} className="text-stone-400" />
+              </div>
+            )}
+          </div>
 
-      {/* Primary action buttons */}
-      <div className="mt-6 flex flex-wrap gap-4">
-        <button onClick={() => nav('/disease')} className="flex items-center gap-2 rounded-xl bg-red-700 px-5 py-3 font-black text-white">
-          <ScanLine size={18} /> Scan a leaf
-        </button>
-        <button onClick={() => nav('/soil')} className="flex items-center gap-2 rounded-xl border border-stone-300 px-5 py-3 font-black dark:border-stone-700">
-          <FlaskConical size={18} /> Check soil
-        </button>
-        <button onClick={() => nav('/weather')} className="flex items-center gap-2 rounded-xl border border-stone-300 px-5 py-3 font-black dark:border-stone-700">
-          <Wind size={18} /> View weather
-        </button>
-      </div>
+          {/* Detailed Cards Grid */}
+          <div className="grid gap-5 md:grid-cols-3">
+            
+            {/* Disease Card */}
+            <div 
+              onClick={() => nav('/disease')}
+              className="card flex flex-col p-5 cursor-pointer hover:border-red-200 dark:hover:border-red-900 transition-colors group"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 p-2 rounded-xl">
+                    <Leaf size={20} />
+                  </div>
+                  <span className="font-black">Disease</span>
+                </div>
+                <ChevronRight size={18} className="text-stone-300 group-hover:text-red-500" />
+              </div>
+              
+              {disease ? (
+                <div>
+                  <h3 className="font-black text-lg truncate">{disease.predicted_disease}</h3>
+                  <p className="text-sm text-stone-500 mt-1">
+                    {disease.severity ? `${disease.severity} severity` : (disease.confidence ? `${Math.round(disease.confidence)}% conf.` : 'Scanned')}
+                    {' • '}
+                    {new Date(disease.scan_date).toLocaleDateString()}
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-2 text-sm text-stone-500">
+                  No scan yet. Take a photo to check for disease.
+                </div>
+              )}
+            </div>
+
+            {/* Soil Card */}
+            <div 
+              onClick={() => nav('/soil')}
+              className="card flex flex-col p-5 cursor-pointer hover:border-amber-200 dark:hover:border-amber-900 transition-colors group"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200 p-2 rounded-xl">
+                    <Droplets size={20} />
+                  </div>
+                  <span className="font-black">Soil</span>
+                </div>
+                <ChevronRight size={18} className="text-stone-300 group-hover:text-amber-500" />
+              </div>
+              
+              {soil ? (
+                <div>
+                  <h3 className="font-black text-lg truncate">{soil.predicted_soil_condition || 'Analysis available'}</h3>
+                  <p className="text-sm text-stone-500 mt-1 line-clamp-1">
+                    {soil.fertilizer_recommendation ? `Rec: ${soil.fertilizer_recommendation}` : 'Analysis completed'}
+                  </p>
+                  <p className="text-xs text-stone-400 mt-1">
+                    {new Date(soil.analysis_date).toLocaleDateString()}
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-2 text-sm text-stone-500">
+                  No analysis yet. Upload a report or check soil.
+                </div>
+              )}
+            </div>
+
+            {/* Weather Card */}
+            <div 
+              onClick={() => nav('/weather')}
+              className="card flex flex-col p-5 cursor-pointer hover:border-blue-200 dark:hover:border-blue-900 transition-colors group"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 p-2 rounded-xl">
+                    <CloudSun size={20} />
+                  </div>
+                  <span className="font-black">Weather</span>
+                </div>
+                <ChevronRight size={18} className="text-stone-300 group-hover:text-blue-500" />
+              </div>
+              
+              {weather ? (
+                <div>
+                  <h3 className="font-black text-lg">
+                    {weather.temperature_c != null ? `${weather.temperature_c}°C` : 'Condition recorded'}
+                  </h3>
+                  <p className="text-sm text-stone-500 mt-1 truncate">
+                    {weather.weather_condition || 'Data available'}
+                  </p>
+                  <p className="text-xs text-stone-400 mt-1">
+                    {new Date(weather.recorded_at).toLocaleDateString()}
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-2 text-sm text-stone-500">
+                  No data. Fetch current conditions for your farm.
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Quick Actions (Keep these handy) */}
+          <div className="flex flex-wrap gap-3 mt-2">
+            <button onClick={() => nav('/disease')} className="flex items-center gap-2 rounded-xl bg-red-700 px-5 py-2.5 text-sm font-black text-white hover:bg-red-800 transition-colors">
+              <ScanLine size={16} /> Scan Leaf
+            </button>
+            <button onClick={() => nav('/soil')} className="flex items-center gap-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-5 py-2.5 text-sm font-black hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
+              <FlaskConical size={16} /> Check Soil
+            </button>
+            <button onClick={() => nav('/weather')} className="flex items-center gap-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-5 py-2.5 text-sm font-black hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
+              <Wind size={16} /> View Weather
+            </button>
+          </div>
+        </div>
+      )}
     </Page>
   )
 }

@@ -26,17 +26,17 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 function ForecastCard({ day }) {
   const label = day.date ? DAYS[new Date(day.date + 'T12:00:00').getDay()] : '—'
   return (
-    <div className="flex flex-1 flex-col items-center gap-2 rounded-2xl bg-white/10 p-4">
-      <p className="text-xs font-black uppercase tracking-widest text-green-200">{label}</p>
-      <ConditionIcon condition={day.weather_condition || ''} size={26} className="text-green-100" />
-      <p className="text-center text-xs text-green-100">{day.weather_condition || '—'}</p>
-      <div className="mt-1 flex gap-2 text-sm font-black">
+    <div className="flex flex-1 flex-col items-center gap-2 rounded-2xl bg-green-50 dark:bg-green-950/40 border border-green-100 dark:border-green-900/50 p-4 min-w-[80px]">
+      <p className="text-xs font-black uppercase tracking-widest text-green-800 dark:text-green-400">{label}</p>
+      <ConditionIcon condition={day.weather_condition || ''} size={26} className="text-green-600 dark:text-green-500" />
+      <p className="text-center text-xs font-bold text-green-700 dark:text-green-300">{day.weather_condition || '—'}</p>
+      <div className="mt-1 flex gap-2 text-sm font-black text-stone-800 dark:text-stone-100">
         <span>{day.temperature_max_c != null ? `${day.temperature_max_c}°` : '—'}</span>
-        <span className="font-normal text-green-200/60">/</span>
-        <span className="font-normal text-green-200/70">{day.temperature_min_c != null ? `${day.temperature_min_c}°` : '—'}</span>
+        <span className="font-normal text-stone-400">/</span>
+        <span className="font-normal text-stone-500">{day.temperature_min_c != null ? `${day.temperature_min_c}°` : '—'}</span>
       </div>
-      {day.precipitation_mm != null && (
-        <p className="text-xs text-green-200/70">{day.precipitation_mm} mm</p>
+      {day.precipitation_mm != null && day.precipitation_mm > 0 && (
+        <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mt-1">{day.precipitation_mm} mm</p>
       )}
     </div>
   )

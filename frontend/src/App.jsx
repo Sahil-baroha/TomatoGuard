@@ -9,6 +9,7 @@ import Weather from './pages/Weather'
 import Tasks from './pages/Tasks'
 import Schemes from './pages/Schemes'
 import History from './pages/History'
+import Recommendations from './pages/Recommendations'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
 import AppLayout from './components/AppLayout'
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/schemes" element={<Schemes />} />
         <Route path="/history" element={<History />} />
+        <Route path="/recommendations" element={<Recommendations />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
       </Route>

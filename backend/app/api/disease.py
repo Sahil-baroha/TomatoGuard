@@ -164,6 +164,9 @@ def disease_history(
             predicted_disease=r.predicted_disease,
             confidence=float(r.confidence) if r.confidence is not None else None,
             scan_date=r.scan_date,
+            image_path=r.image_path,
+            severity=r.severity,
+            recommendation=r.recommendation,
         )
         for r in rows
     ]

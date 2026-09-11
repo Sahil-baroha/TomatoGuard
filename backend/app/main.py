@@ -26,3 +26,5 @@ app.include_router(soil.router, prefix="/soil", tags=["soil"])
 app.include_router(weather.router, prefix="/weather", tags=["weather"])
 from app.api import history
 app.include_router(history.router, prefix="/history", tags=["history"])
+from app.api import recommendations
+app.include_router(recommendations.router, prefix="/recommendations", tags=["recommendations"])

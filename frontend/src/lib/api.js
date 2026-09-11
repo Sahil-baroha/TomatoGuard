@@ -205,3 +205,8 @@ export async function getHistory(type = null, from = null, to = null) {
   const qs = params.toString()
   return apiFetch(`/history${qs ? '?' + qs : ''}`)
 }
+
+// ── Recommendations (GET /recommendations/latest) ────────────────────────────
+export async function getRecommendations() {
+  return apiFetch('/recommendations/latest')
+}

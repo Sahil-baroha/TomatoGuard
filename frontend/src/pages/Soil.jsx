@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   UploadCloud, FileText, ClipboardList, CheckCircle2, Trash2,
-  AlertTriangle, Leaf, FlaskConical
+  AlertTriangle, Leaf, FlaskConical, PlusCircle, LoaderCircle
 } from 'lucide-react'
 import Page from '../components/Page'
 import {
@@ -9,19 +9,69 @@ import {
 } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
 
+// ── Shared analysis result panel ──────────────────────────────────────────────
+
+function AnalysisResultPanel({ analysis, emptyMessage }) {
+  return (
+    <div className="rounded-3xl bg-[#1c2e1c] p-7 text-white">
+      {analysis ? (
+        <>
+          <div className="flex items-center gap-3">
+            <FlaskConical className="text-green-300" size={32} />
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-green-300">Soil condition</p>
+              <h2 className="text-2xl font-black leading-tight">{analysis.predicted_soil_condition || 'Assessed'}</h2>
+            </div>
+          </div>
+          {(analysis.ph != null || analysis.nitrogen != null || analysis.phosphorus != null || analysis.potassium != null) && (
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              {[['pH', analysis.ph], ['N (kg/ha)', analysis.nitrogen], ['P (kg/ha)', analysis.phosphorus], ['K (kg/ha)', analysis.potassium]].map(([label, val]) =>
+                val != null ? (
+                  <div key={label} className="rounded-2xl bg-white/10 p-3">
+                    <p className="text-xs text-green-200">{label}</p>
+                    <p className="text-lg font-black">{val}</p>
+                  </div>
+                ) : null
+              )}
+            </div>
+          )}
+          {analysis.fertilizer_recommendation && (
+            <div className="mt-5 rounded-2xl bg-white/10 p-5">
+              <p className="mb-2 text-xs font-black uppercase tracking-widest text-green-300">Fertiliser recommendation</p>
+              <p className="leading-7 text-green-50">{analysis.fertilizer_recommendation}</p>
+            </div>
+          )}
+          {analysis.irrigation_recommendation && (
+            <div className="mt-4 rounded-2xl bg-white/10 p-5">
+              <p className="mb-2 text-xs font-black uppercase tracking-widest text-green-300">Irrigation recommendation</p>
+              <p className="leading-7 text-green-50">{analysis.irrigation_recommendation}</p>
+            </div>
+          )}
+          <p className="mt-4 text-xs text-green-200/50">Analysis #{analysis.analysis_id} · saved</p>
+        </>
+      ) : (
+        <div className="grid h-full min-h-64 place-items-center text-center">
+          <div>
+            <Leaf className="mx-auto text-green-300" size={48} />
+            <h2 className="mt-4 text-xl font-black">No analysis yet</h2>
+            <p className="mt-2 max-w-xs text-green-50/70">{emptyMessage}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── UPLOAD TAB ────────────────────────────────────────────────────────────────
 
 function UploadTab() {
   const nav = useNavigate()
-  // Step: 'idle' → 'ocr_done' → 'confirmed'
   const [step, setStep] = useState('idle')
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [confirming, setConfirming] = useState(false)
-  // OCR result
   const [reportId, setReportId] = useState(null)
   const [rawOcr, setRawOcr] = useState('')
-  // Editable confirmed values (pre-filled from OCR)
   const [fields, setFields] = useState({ ph: '', nitrogen: '', phosphorus: '', potassium: '', moisture: '', organic_matter: '' })
   const [analysis, setAnalysis] = useState(null)
   const [msg, setMsg] = useState(null)
@@ -47,7 +97,6 @@ function UploadTab() {
       const data = await uploadSoilReport(file)
       setReportId(data.soil_report_id)
       setRawOcr(data.raw_ocr_text || '')
-      // Pre-fill editable fields from OCR (null → empty string)
       setFields({
         ph:             data.ph            != null ? String(data.ph)            : '',
         nitrogen:       data.nitrogen      != null ? String(data.nitrogen)      : '',
@@ -93,7 +142,6 @@ function UploadTab() {
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
-      {/* Left — file picker / OCR fields */}
       <div className="card p-6 flex flex-col gap-4">
         {step === 'idle' && (
           <>
@@ -187,7 +235,6 @@ function UploadTab() {
         )}
       </div>
 
-      {/* Right — analysis result */}
       <AnalysisResultPanel analysis={analysis} emptyMessage="Upload a report and confirm values to see the analysis here." />
     </div>
   )
@@ -264,55 +311,27 @@ function QuestionnaireTab() {
   )
 }
 
-// ── Shared analysis result panel ─────────────────────────────────────────────
+// ── Latest analysis read-only view (Bug 3) ────────────────────────────────────
 
-function AnalysisResultPanel({ analysis, emptyMessage }) {
+function LatestView({ latest, onRunNew }) {
   return (
-    <div className="rounded-3xl bg-[#1c2e1c] p-7 text-white">
-      {analysis ? (
-        <>
-          <div className="flex items-center gap-3">
-            <FlaskConical className="text-green-300" size={32} />
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest text-green-300">Soil condition</p>
-              <h2 className="text-2xl font-black leading-tight">{analysis.predicted_soil_condition || 'Assessed'}</h2>
-            </div>
-          </div>
-          {(analysis.ph != null || analysis.nitrogen != null || analysis.phosphorus != null || analysis.potassium != null) && (
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              {[['pH', analysis.ph], ['N (kg/ha)', analysis.nitrogen], ['P (kg/ha)', analysis.phosphorus], ['K (kg/ha)', analysis.potassium]].map(([label, val]) =>
-                val != null ? (
-                  <div key={label} className="rounded-2xl bg-white/10 p-3">
-                    <p className="text-xs text-green-200">{label}</p>
-                    <p className="text-lg font-black">{val}</p>
-                  </div>
-                ) : null
-              )}
-            </div>
-          )}
-          {analysis.fertilizer_recommendation && (
-            <div className="mt-5 rounded-2xl bg-white/10 p-5">
-              <p className="mb-2 text-xs font-black uppercase tracking-widest text-green-300">Fertiliser recommendation</p>
-              <p className="leading-7 text-green-50">{analysis.fertilizer_recommendation}</p>
-            </div>
-          )}
-          {analysis.irrigation_recommendation && (
-            <div className="mt-4 rounded-2xl bg-white/10 p-5">
-              <p className="mb-2 text-xs font-black uppercase tracking-widest text-green-300">Irrigation recommendation</p>
-              <p className="leading-7 text-green-50">{analysis.irrigation_recommendation}</p>
-            </div>
-          )}
-          <p className="mt-4 text-xs text-green-200/50">Analysis #{analysis.analysis_id} · saved</p>
-        </>
-      ) : (
-        <div className="grid h-full min-h-64 place-items-center text-center">
-          <div>
-            <Leaf className="mx-auto text-green-300" size={48} />
-            <h2 className="mt-4 text-xl font-black">No analysis yet</h2>
-            <p className="mt-2 max-w-xs text-green-50/70">{emptyMessage}</p>
-          </div>
+    <div className="flex flex-col gap-5">
+      {/* Summary panel (reuse the dark card) */}
+      <AnalysisResultPanel analysis={latest} emptyMessage="" />
+
+      {/* "Run new analysis" action — clearly separate */}
+      <div className="card p-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="font-black">Run a new analysis</p>
+          <p className="text-sm text-stone-500">Upload a new report image or fill out the questionnaire.</p>
         </div>
-      )}
+        <button
+          onClick={onRunNew}
+          className="flex shrink-0 items-center gap-2 rounded-xl bg-red-700 px-5 py-3 font-black text-white"
+        >
+          <PlusCircle size={18} /> New analysis
+        </button>
+      </div>
     </div>
   )
 }
@@ -320,13 +339,68 @@ function AnalysisResultPanel({ analysis, emptyMessage }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function Soil() {
+  const nav = useNavigate()
+  // 'loading' → check for latest; 'latest' → show existing; 'new' → show upload/q tabs
+  const [view, setView] = useState('loading')
+  const [latest, setLatest] = useState(null)
   const [tab, setTab] = useState('upload')
 
+  useEffect(() => {
+    getSoilLatest()
+      .then(data => {
+        if (data && data.analysis_id) {
+          setLatest(data)
+          setView('latest')
+        } else {
+          setView('new')
+        }
+      })
+      .catch(err => {
+        if (err.status === 401 || err.status === 403) {
+          clearTokens(); nav('/login', { replace: true }); return
+        }
+        // 404 or no data → go straight to new analysis flow
+        setView('new')
+      })
+  }, [])
+
+  if (view === 'loading') {
+    return (
+      <Page title="Soil Analysis" sub="Loading your latest soil analysis…">
+        <div className="flex justify-center py-16">
+          <LoaderCircle className="animate-spin text-red-700" size={36} />
+        </div>
+      </Page>
+    )
+  }
+
+  if (view === 'latest') {
+    return (
+      <Page
+        title="Soil Analysis"
+        sub="Your latest soil analysis result. Run a new analysis at any time."
+      >
+        <LatestView latest={latest} onRunNew={() => setView('new')} />
+      </Page>
+    )
+  }
+
+  // view === 'new': show upload/questionnaire tabs
   return (
     <Page
       title="Soil Analysis"
       sub="Upload a soil-test report image for server-side OCR, or answer the questionnaire for a quick rule-based assessment."
     >
+      {/* Back to latest (only if one exists) */}
+      {latest && (
+        <button
+          onClick={() => setView('latest')}
+          className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-500 hover:text-red-700"
+        >
+          ← Back to latest result
+        </button>
+      )}
+
       <div className="mb-5 flex gap-2 rounded-2xl bg-stone-100 p-1 dark:bg-stone-900">
         <button
           onClick={() => setTab('upload')}

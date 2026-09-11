@@ -18,8 +18,12 @@ class DiseaseAnalyzeResponse(BaseModel):
 
 
 class DiseaseHistoryItem(BaseModel):
-    """One item in the GET /disease/history array — exact field names per spec."""
+    """One item in the GET /disease/history array."""
     scan_id: int
     predicted_disease: str
     confidence: Optional[float]
     scan_date: datetime
+    # Added for clickable detail modal — already stored in disease_scans
+    image_path: Optional[str] = None
+    severity: Optional[str] = None
+    recommendation: Optional[str] = None
