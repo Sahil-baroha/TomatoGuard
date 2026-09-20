@@ -3,12 +3,11 @@
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (Tesseract for OCR and OpenCV dependencies)
+# Install system dependencies (Tesseract for OCR)
+# We don't need libgl1-mesa-glx because we are using opencv-python-headless
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     libtesseract-dev \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PyTorch CPU first (keeps image size small and avoids GPU overhead)
