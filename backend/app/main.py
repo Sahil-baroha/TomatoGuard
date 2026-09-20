@@ -2,11 +2,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth, admin_auth, admin_diseases, admin_farmers, dashboard, disease, soil, weather
 
+import os
+
 app = FastAPI(title="TomatoGuard AI API")
+
+# Default to localhost for dev, but allow comma-separated Vercel URLs in production
+allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

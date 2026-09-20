@@ -27,3 +27,5 @@ check_tables.js
 
 *.png
 *.pth
+
+!docs/tomato_model_valid.pth
