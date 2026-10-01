@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, get_current_user, decode_token
+from app.core.recaptcha import verify_captcha
 from app.models.user import User
 from app.models.farm import Farm
 from app.schemas.auth import SignupRequest, LoginRequest, RefreshRequest, TokenResponse, MeResponse
@@ -45,7 +46,8 @@ def signup(req: SignupRequest, db: Session = Depends(get_db)):
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=TokenResponse)
-def login(req: LoginRequest, db: Session = Depends(get_db)):
+async def login(req: LoginRequest, db: Session = Depends(get_db)):
+    await verify_captcha(req.captcha_token)
     user = db.query(User).filter(User.email == req.email).first()
     if not user or not verify_password(req.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")

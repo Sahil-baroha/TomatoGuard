@@ -1,14 +1,51 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 import Brand from '../components/Brand'
 import { login, getMe } from '../lib/api'
 
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''
+
 export default function Login() {
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState(null)
+  const captchaRef = useRef(null)
   const nav = useNavigate()
+
+  // Load reCAPTCHA v2 script and render widget into the ref div
+  useEffect(() => {
+    if (!RECAPTCHA_SITE_KEY) return
+
+    const renderWidget = () => {
+      if (captchaRef.current && captchaRef.current.childNodes.length === 0) {
+        window.grecaptcha.render(captchaRef.current, {
+          sitekey: RECAPTCHA_SITE_KEY,
+          callback: (token) => setCaptchaToken(token),
+          'expired-callback': () => setCaptchaToken(null),
+        })
+      }
+    }
+
+    if (window.grecaptcha?.render) {
+      renderWidget()
+      return
+    }
+
+    // Script not yet loaded — inject it with an onload hook
+    window.__onRecaptchaLoad = renderWidget
+    if (!document.getElementById('g-recaptcha-script')) {
+      const s = document.createElement('script')
+      s.id = 'g-recaptcha-script'
+      s.src = 'https://www.google.com/recaptcha/api.js?onload=__onRecaptchaLoad&render=explicit'
+      s.async = true
+      s.defer = true
+      document.head.appendChild(s)
+    }
+
+    return () => { delete window.__onRecaptchaLoad }
+  }, [])
 
   const submit = async e => {
     e.preventDefault()
@@ -17,10 +54,11 @@ export default function Login() {
     const email = f.get('email')
     const password = f.get('password')
     if (!email || !password) return setError('Enter email and password.')
+    if (RECAPTCHA_SITE_KEY && !captchaToken) return setError('Please complete the CAPTCHA.')
 
     setLoading(true)
     try {
-      await login(email, password)
+      await login(email, password, captchaToken)
       // Fetch and cache the user profile so components can read their name
       const me = await getMe()
       localStorage.setItem('tomatoUser', JSON.stringify({ name: me.name, email: me.email }))
@@ -59,9 +97,12 @@ export default function Login() {
             </button>
           </div>
         </Field>
+        {RECAPTCHA_SITE_KEY && (
+          <div ref={captchaRef} className="flex justify-center" />
+        )}
         {error && <p className="rounded-xl bg-red-50 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
         <button
-          disabled={loading}
+          disabled={loading || (RECAPTCHA_SITE_KEY ? !captchaToken : false)}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-700 py-3 font-black text-white disabled:opacity-50"
         >
           {loading ? 'Signing in…' : <><span>Sign in</span><ArrowRight size={18} /></>}

@@ -56,10 +56,10 @@ async function apiFetch(path, options = {}, requiresAuth = true) {
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
-export async function login(email, password) {
+export async function login(email, password, captchaToken) {
   const data = await apiFetch('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, captcha_token: captchaToken }),
   }, false)
   setTokens({ access_token: data.access_token, refresh_token: data.refresh_token })
   return data

@@ -17,6 +17,7 @@ class SignupRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+    captcha_token: str
 
 class RefreshRequest(BaseModel):
     refresh_token: str
