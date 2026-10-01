@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Brand from '../components/Brand'
 import { login, getMe } from '../lib/api'
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''
 
 export default function Login() {
+  const { t } = useTranslation()
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -53,8 +55,8 @@ export default function Login() {
     const f = new FormData(e.currentTarget)
     const email = f.get('email')
     const password = f.get('password')
-    if (!email || !password) return setError('Enter email and password.')
-    if (RECAPTCHA_SITE_KEY && !captchaToken) return setError('Please complete the CAPTCHA.')
+    if (!email || !password) return setError(t('login.errorEnterFields'))
+    if (RECAPTCHA_SITE_KEY && !captchaToken) return setError(t('login.errorCompleteCaptcha'))
 
     setLoading(true)
     try {
@@ -65,13 +67,13 @@ export default function Login() {
       nav('/dashboard')
     } catch (err) {
       if (err.status === 403) {
-        setError('This account has been deactivated. Contact your administrator.')
+        setError(t('login.errorDeactivated'))
       } else if (err.status === 401) {
-        setError('Incorrect email or password.')
+        setError(t('login.errorInvalidCredentials'))
       } else if (err.message === 'SERVICE_NOT_CONFIGURED') {
-        setError('Backend service is not configured — set VITE_BACKEND_API_URL in your .env file.')
+        setError(t('login.errorServiceNotConfigured'))
       } else {
-        setError(err.message || 'Login failed. Please try again.')
+        setError(err.message || t('login.errorGeneric'))
       }
     } finally {
       setLoading(false)
@@ -79,18 +81,18 @@ export default function Login() {
   }
 
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in to your tomato farm workspace.">
+    <AuthShell title={t('login.title')} subtitle={t('login.subtitle')}>
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Email">
-          <input name="email" type="email" className="input" placeholder="farmer@example.com" />
+        <Field label={t('login.email')}>
+          <input name="email" type="email" className="input" placeholder={t('login.emailPlaceholder')} />
         </Field>
-        <Field label="Password">
+        <Field label={t('login.password')}>
           <div className="relative">
             <input
               name="password"
               type={show ? 'text' : 'password'}
               className="input pr-12"
-              placeholder="Password"
+              placeholder={t('login.passwordPlaceholder')}
             />
             <button type="button" className="absolute right-4 top-3.5" onClick={() => setShow(!show)}>
               {show ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -105,17 +107,18 @@ export default function Login() {
           disabled={loading || (RECAPTCHA_SITE_KEY ? !captchaToken : false)}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-700 py-3 font-black text-white disabled:opacity-50"
         >
-          {loading ? 'Signing in…' : <><span>Sign in</span><ArrowRight size={18} /></>}
+          {loading ? t('login.signingIn') : <><span>{t('login.signIn')}</span><ArrowRight size={18} /></>}
         </button>
       </form>
       <p className="mt-6 text-center text-sm">
-        New user? <Link to="/signup" className="font-black text-red-700">Register here</Link>
+        {t('login.newUser')} <Link to="/signup" className="font-black text-red-700">{t('login.registerHere')}</Link>
       </p>
     </AuthShell>
   )
 }
 
 export function AuthShell({ title, subtitle, children }) {
+  const { t } = useTranslation()
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="auth-tomato hidden p-10 text-white lg:flex lg:flex-col lg:justify-between">
@@ -133,7 +136,7 @@ export function AuthShell({ title, subtitle, children }) {
           <h1 className="text-4xl font-black">{title}</h1>
           <p className="mt-2 text-stone-500 dark:text-stone-400">{subtitle}</p>
           <div className="mt-8 rounded-3xl bg-white dark:bg-stone-900 p-7 shadow-xl">{children}</div>
-          <Link to="/" className="mt-6 block text-center text-sm font-bold text-red-700 dark:text-red-400">← Back to landing page</Link>
+          <Link to="/" className="mt-6 block text-center text-sm font-bold text-red-700 dark:text-red-400">{t('login.backToLanding')}</Link>
         </div>
       </div>
     </div>

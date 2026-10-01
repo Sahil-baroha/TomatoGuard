@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { UploadCloud, ScanLine, AlertTriangle, CheckCircle2, Trash2, Leaf, Clock, X, Image as ImageIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Page from '../components/Page'
 import { analyzeDisease, getDiseaseHistory, clearTokens } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
@@ -47,6 +48,7 @@ function SeverityBadge({ severity }) {
 
 // ── Scan detail modal (Bug 2) ─────────────────────────────────────────────────
 function ScanDetailModal({ item, onClose }) {
+  const { t } = useTranslation()
   if (!item) return null
   return (
     <div
@@ -78,7 +80,7 @@ function ScanDetailModal({ item, onClose }) {
             </div>
           ) : (
             <div className="flex items-center gap-2 text-stone-400 text-sm">
-              <ImageIcon size={16} /> No image available for this scan
+              <ImageIcon size={16} /> {t('disease.noImageAvailable')}
             </div>
           )}
 
@@ -87,7 +89,7 @@ function ScanDetailModal({ item, onClose }) {
             <SeverityBadge severity={item.severity} />
             {item.confidence != null && (
               <span className="text-sm text-stone-500">
-                Confidence: <b>{Math.round(item.confidence)}%</b>
+                {t('disease.confidence', { value: Math.round(item.confidence) })}
               </span>
             )}
           </div>
@@ -102,7 +104,7 @@ function ScanDetailModal({ item, onClose }) {
           {item.recommendation && (
             <div className="rounded-2xl bg-stone-50 dark:bg-stone-800 p-4">
               <p className="text-xs font-black uppercase tracking-widest text-stone-400 mb-2">
-                Treatment / Recommendation
+                {t('disease.treatmentRecommendation')}
               </p>
               <p className="text-sm leading-7 text-stone-700 dark:text-stone-300">
                 {item.recommendation}
@@ -118,6 +120,7 @@ function ScanDetailModal({ item, onClose }) {
 }
 
 export default function Disease() {
+  const { t } = useTranslation()
   const nav = useNavigate()
   const [preview, setPreview] = useState(null)
   const [file, setFile] = useState(null)
@@ -139,7 +142,7 @@ export default function Disease() {
           clearTokens(); nav('/login', { replace: true })
           return
         }
-        setHistoryErr('Could not load scan history.')
+        setHistoryErr(t('disease.errorHistoryFailed'))
       })
     return () => { cancelled = true }
   }, [result])  // re-fetch after each successful new scan
@@ -151,25 +154,25 @@ export default function Disease() {
     if (!f) return
     reset()
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type)) {
-      setMsg({ ok: false, text: 'Please choose a valid image file (JPG, PNG or WEBP).' })
+      setMsg({ ok: false, text: t('disease.errorInvalidFile') })
       return
     }
     if (f.size > 8 * 1024 * 1024) {
-      setMsg({ ok: false, text: 'Please choose an image smaller than 8 MB.' })
+      setMsg({ ok: false, text: t('disease.errorFileTooLarge') })
       return
     }
     setLoading(true)
     try {
       const check = await imageLooksLeafLike(f)
       if (!check.ok) {
-        setMsg({ ok: false, text: 'We could not identify a suitable leaf image. Please upload a clear tomato leaf photo.' })
+        setMsg({ ok: false, text: t('disease.errorNotLeaf') })
         return
       }
       setPreview(check.dataUrl)
       setFile(f)
-      setMsg({ ok: true, text: 'Image ready for analysis.' })
+      setMsg({ ok: true, text: t('disease.imageReady') })
     } catch {
-      setMsg({ ok: false, text: 'This image could not be read. Please try another image.' })
+      setMsg({ ok: false, text: t('disease.errorUnreadable') })
     } finally {
       setLoading(false)
     }
@@ -182,12 +185,12 @@ export default function Disease() {
     try {
       const data = await analyzeDisease(file)
       setResult(data)
-      setMsg({ ok: true, text: 'Analysis complete — result saved.' })
+      setMsg({ ok: true, text: t('disease.analysisComplete') })
     } catch (err) {
       if (err.status === 401 || err.status === 403) {
         clearTokens(); nav('/login', { replace: true }); return
       }
-      setMsg({ ok: false, text: err.message || 'Analysis failed. Please try again.' })
+      setMsg({ ok: false, text: err.message || t('disease.errorAnalysisFailed') })
     } finally {
       setLoading(false)
     }
@@ -195,8 +198,8 @@ export default function Disease() {
 
   return (
     <Page
-      title="Leaf Disease Analysis"
-      sub="Upload a clear tomato leaf image. The result is uploaded to secure storage and saved to your history."
+      title={t('disease.title')}
+      sub={t('disease.sub')}
     >
       <div className="grid gap-5 lg:grid-cols-2">
         {/* ── Left: upload panel ── */}
@@ -205,8 +208,8 @@ export default function Disease() {
             <label className="grid min-h-80 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-red-200 bg-red-50/50 p-5 text-center dark:border-red-900 dark:bg-red-950/20">
               <div>
                 <UploadCloud className="mx-auto text-red-700" size={46} />
-                <p className="mt-4 font-black">Choose leaf image</p>
-                <p className="mt-2 text-sm text-stone-500">JPG / PNG / WEBP · maximum 8 MB</p>
+                <p className="mt-4 font-black">{t('disease.chooseImage')}</p>
+                <p className="mt-2 text-sm text-stone-500">{t('disease.imageHint')}</p>
               </div>
               {/* capture="environment" — prefer rear camera on mobile (Phase 2 requirement) */}
               <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={choose} className="hidden" />
@@ -219,7 +222,7 @@ export default function Disease() {
                   onClick={reset}
                   className="absolute right-3 top-3 flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-black text-red-700 shadow dark:bg-stone-900"
                 >
-                  <Trash2 size={16} /> Remove
+                  <Trash2 size={16} /> {t('disease.remove')}
                 </button>
               </div>
             </div>
@@ -238,7 +241,7 @@ export default function Disease() {
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-red-700 py-3 font-black text-white disabled:opacity-40"
           >
             <ScanLine size={19} />
-            {loading ? 'Processing…' : 'Analyze image'}
+            {loading ? t('disease.processing') : t('disease.analyzeImage')}
           </button>
         </div>
 
@@ -252,53 +255,53 @@ export default function Disease() {
                 <SeverityBadge severity={result.severity} />
               </div>
 
-              <p className="mt-4 text-xs font-black uppercase tracking-[.16em] text-red-300">Model result</p>
+              <p className="mt-4 text-xs font-black uppercase tracking-[.16em] text-red-300">{t('disease.modelResult')}</p>
               <h2 className="mt-1 text-2xl font-black leading-tight">{result.predicted_disease}</h2>
 
               {result.confidence !== null && result.confidence !== undefined && (
                 <p className="mt-2 text-sm">
-                  Confidence: <b>{Math.round(result.confidence)}%</b>
+                  {t('disease.confidence', { value: Math.round(result.confidence) })}
                 </p>
               )}
               {result.low_confidence_warning && (
                 <div className="mt-3 flex gap-2 rounded-xl bg-yellow-500/20 p-3 text-yellow-200">
                   <AlertTriangle size={17} className="mt-0.5 shrink-0" />
                   <p className="text-xs leading-relaxed">
-                    <b>Low confidence detected.</b> For a more accurate result, please retake the photo in bright, natural daylight with the leaf filling the frame and in sharp focus.
+                    <b>{t('disease.lowConfidence')}</b>
                   </p>
                 </div>
               )}
 
               {result.description && (
                 <div className="mt-5 rounded-2xl bg-white/10 p-4">
-                  <p className="mb-1 text-xs font-black uppercase tracking-widest text-red-300">About this disease</p>
+                  <p className="mb-1 text-xs font-black uppercase tracking-widest text-red-300">{t('disease.aboutDisease')}</p>
                   <p className="text-sm leading-7 text-red-50">{result.description}</p>
                 </div>
               )}
 
               {result.treatment_plan && (
                 <div className="mt-3 rounded-2xl bg-white/10 p-4">
-                  <p className="mb-1 text-xs font-black uppercase tracking-widest text-red-300">Treatment &amp; action plan</p>
+                  <p className="mb-1 text-xs font-black uppercase tracking-widest text-red-300">{t('disease.treatmentPlan')}</p>
                   <p className="text-sm leading-7 text-red-50">{result.treatment_plan}</p>
                 </div>
               )}
 
               {result.prevention_tips && (
                 <div className="mt-3 rounded-2xl bg-white/10 p-4">
-                  <p className="mb-1 text-xs font-black uppercase tracking-widest text-red-300">Prevention tips</p>
+                  <p className="mb-1 text-xs font-black uppercase tracking-widest text-red-300">{t('disease.preventionTips')}</p>
                   <p className="text-sm leading-7 text-red-50">{result.prevention_tips}</p>
                 </div>
               )}
 
-              <p className="mt-5 text-xs text-red-200/50">Scan #{result.scan_id} · saved to your history</p>
+              <p className="mt-5 text-xs text-red-200/50">{t('disease.scanSaved', { id: result.scan_id })}</p>
             </>
           ) : (
             <div className="grid h-full min-h-80 place-items-center text-center">
               <div>
                 <Leaf className="mx-auto text-red-300" size={50} />
-                <h2 className="mt-4 text-2xl font-black">No analysis yet</h2>
+                <h2 className="mt-4 text-2xl font-black">{t('disease.noAnalysisYet')}</h2>
                 <p className="mt-2 max-w-sm text-red-50/80">
-                  Upload a leaf image to receive the disease detection result.
+                  {t('disease.uploadPrompt')}
                 </p>
               </div>
             </div>
@@ -308,13 +311,13 @@ export default function Disease() {
 
       {/* ── Scan history (Bug 2: clickable cards) ── */}
       <div className="mt-8">
-        <h2 className="mb-4 text-lg font-black">Scan history</h2>
+        <h2 className="mb-4 text-lg font-black">{t('disease.scanHistory')}</h2>
         {historyErr ? (
           <p className="text-sm text-red-700">{historyErr}</p>
         ) : history === null ? (
-          <p className="text-sm text-stone-400">Loading history…</p>
+          <p className="text-sm text-stone-400">{t('disease.loadingHistory')}</p>
         ) : history.length === 0 ? (
-          <p className="text-sm text-stone-500">No scans yet — your completed analyses will appear here.</p>
+          <p className="text-sm text-stone-500">{t('disease.noScansYet')}</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {history.map(item => (

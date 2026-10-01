@@ -4,6 +4,7 @@ import {
   MapPin, RefreshCw, AlertTriangle, Sun, CloudRain,
   CloudSnow, CloudLightning, CloudDrizzle, Cloudy
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Page from '../components/Page'
 import { getWeatherCurrent, getWeatherForecast, clearTokens } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
@@ -43,6 +44,7 @@ function ForecastCard({ day }) {
 }
 
 export default function Weather() {
+  const { t } = useTranslation()
   const nav = useNavigate()
   const [current, setCurrent] = useState(null)
   const [forecast, setForecast] = useState(null)
@@ -71,8 +73,8 @@ export default function Weather() {
 
   return (
     <Page
-      title="Weather"
-      sub="Live conditions fetched from Open-Meteo for your farm's GPS location."
+      title={t('weather.title')}
+      sub={t('weather.sub')}
     >
       <div className="mb-4 flex justify-end">
         <button
@@ -81,7 +83,7 @@ export default function Weather() {
           className="flex items-center gap-2 rounded-xl bg-stone-100 px-4 py-2 text-sm font-black hover:bg-stone-200 disabled:opacity-40 dark:bg-stone-800 dark:hover:bg-stone-700"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-          {loading ? 'Loading…' : 'Refresh'}
+          {loading ? t('weather.loading') : t('weather.refresh')}
         </button>
       </div>
 
@@ -93,10 +95,9 @@ export default function Weather() {
             <div>
               {error.noLocation ? (
                 <>
-                  <p className="font-black text-amber-800 dark:text-amber-300">No farm location set</p>
+                  <p className="font-black text-amber-800 dark:text-amber-300">{t('weather.noLocation')}</p>
                   <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                    Weather data requires your farm's GPS coordinates. Go to your{' '}
-                    <strong>Profile</strong> page to add latitude and longitude, then come back here.
+                    {t('weather.noLocationHint')}
                   </p>
                   <div className="mt-3 flex items-center gap-2">
                     <MapPin size={14} className="text-amber-600" />
@@ -105,7 +106,7 @@ export default function Weather() {
                 </>
               ) : (
                 <>
-                  <p className="font-black text-amber-800 dark:text-amber-300">Could not load weather</p>
+                  <p className="font-black text-amber-800 dark:text-amber-300">{t('weather.couldNotLoad')}</p>
                   <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">{error.message}</p>
                 </>
               )}
@@ -119,7 +120,7 @@ export default function Weather() {
         <div className="rounded-3xl bg-[#1c2e1c] p-7 text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-widest text-green-300">Current conditions</p>
+              <p className="text-xs font-black uppercase tracking-widest text-green-300">{t('weather.currentConditions')}</p>
               <h2 className="mt-1 text-3xl font-black">
                 {current.temperature_c != null ? `${current.temperature_c}°C` : '—'}
               </h2>
@@ -129,10 +130,10 @@ export default function Weather() {
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile icon={<Droplets size={18} />} label="Humidity" value={current.humidity_percent != null ? `${current.humidity_percent}%` : '—'} />
-            <StatTile icon={<CloudRain size={18} />} label="Rainfall" value={current.rainfall_mm != null ? `${current.rainfall_mm} mm` : '—'} />
-            <StatTile icon={<Wind size={18} />} label="Wind" value={current.wind_speed_kmh != null ? `${current.wind_speed_kmh} km/h` : '—'} />
-            <StatTile icon={<Gauge size={18} />} label="Pressure" value={current.pressure_hpa != null ? `${current.pressure_hpa} hPa` : '—'} />
+            <StatTile icon={<Droplets size={18} />} label={t('weather.humidity')} value={current.humidity_percent != null ? `${current.humidity_percent}%` : '—'} />
+            <StatTile icon={<CloudRain size={18} />} label={t('weather.rainfall')} value={current.rainfall_mm != null ? `${current.rainfall_mm} mm` : '—'} />
+            <StatTile icon={<Wind size={18} />} label={t('weather.wind')} value={current.wind_speed_kmh != null ? `${current.wind_speed_kmh} km/h` : '—'} />
+            <StatTile icon={<Gauge size={18} />} label={t('weather.pressure')} value={current.pressure_hpa != null ? `${current.pressure_hpa} hPa` : '—'} />
           </div>
 
           <p className="mt-4 text-xs text-green-200/50">
@@ -144,7 +145,7 @@ export default function Weather() {
       {/* 5-day forecast */}
       {forecast && forecast.forecast && forecast.forecast.length > 0 && (
         <div className="mt-5">
-          <h3 className="mb-3 font-black">5-day forecast</h3>
+          <h3 className="mb-3 font-black">{t('weather.fiveDayForecast')}</h3>
           <div className="flex gap-3 overflow-x-auto pb-2">
             {forecast.forecast.map((day, i) => (
               <ForecastCard key={i} day={day} />
@@ -156,7 +157,7 @@ export default function Weather() {
       {/* Loading skeleton */}
       {loading && !current && (
         <div className="mt-4 rounded-3xl bg-stone-100 p-8 text-center dark:bg-stone-800">
-          <p className="text-stone-400">Loading weather data…</p>
+          <p className="text-stone-400">{t('weather.loadingData')}</p>
         </div>
       )}
     </Page>

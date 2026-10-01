@@ -5,12 +5,14 @@ import {
   ScanLine, FlaskConical, Wind, AlertTriangle, Loader2,
   ChevronRight, ArrowRight, ShieldCheck, ShieldAlert, ShieldX
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Page from '../components/Page'
 import { getDashboardSummary, clearTokens } from '../lib/api'
 
 // ── Dashboard Component ────────────────────────────────────────────────────────
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const user = (() => { try { return JSON.parse(localStorage.getItem('tomatoUser') || '{}') } catch { return {} } })()
   const nav = useNavigate()
   const [summary, setSummary] = useState(null)
@@ -29,9 +31,9 @@ export default function Dashboard() {
           return
         }
         if (err.message === 'SERVICE_NOT_CONFIGURED') {
-          setApiError('Backend not configured — set VITE_BACKEND_API_URL in .env')
+          setApiError(t('dashboard.backendNotConfigured'))
         } else {
-          setApiError(err.message || 'Could not load dashboard data.')
+          setApiError(err.message || t('dashboard.backendNotConfigured'))
         }
         setLoading(false)
       })
@@ -56,15 +58,15 @@ export default function Dashboard() {
                       rp?.health_status === 'good' ? 'text-green-700 bg-green-100 dark:bg-green-900 dark:text-green-200' :
                       'text-purple-600 bg-purple-100 dark:bg-purple-900 dark:text-purple-200'
   
-  const statusLabel = rp?.health_status === 'critical' ? 'Critical Attention Needed' :
-                      rp?.health_status === 'at-risk' ? 'At Risk - Needs Attention' :
-                      rp?.health_status === 'good' ? 'Crop Health is Good' :
-                      hasAnyData ? 'Recommendations Available' : 'No Data Available'
+  const statusLabel = rp?.health_status === 'critical' ? t('dashboard.statusCritical') :
+                      rp?.health_status === 'at-risk' ? t('dashboard.statusAtRisk') :
+                      rp?.health_status === 'good' ? t('dashboard.statusGood') :
+                      hasAnyData ? t('dashboard.statusRecsAvailable') : t('dashboard.statusNoData')
 
   return (
     <Page
-      title={`Hello, ${user.name ? user.name.split(' ')[0] : 'Farmer'}!`}
-      sub="Here is the latest snapshot of your farm's health."
+      title={user.name ? t('dashboard.greeting', { name: user.name.split(' ')[0] }) : t('dashboard.greetingFallback')}
+      sub={t('dashboard.sub')}
     >
       {apiError && (
         <div className="mb-5 flex items-start gap-3 rounded-2xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
@@ -76,7 +78,7 @@ export default function Dashboard() {
       {loading ? (
         <div className="flex items-center gap-2 text-stone-400 p-6">
           <Loader2 size={16} className="animate-spin" />
-          <span className="text-sm font-bold">Loading dashboard...</span>
+          <span className="text-sm font-bold">{t('dashboard.loading')}</span>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
@@ -95,10 +97,10 @@ export default function Dashboard() {
               <StatusIcon size={40} />
             </div>
             <div className="flex-1 text-center md:text-left">
-              <p className="text-xs font-black uppercase tracking-widest text-stone-500 mb-1">Overall Farm Status</p>
+              <p className="text-xs font-black uppercase tracking-widest text-stone-500 mb-1">{t('dashboard.overallStatus')}</p>
               <h2 className="text-2xl md:text-3xl font-black mb-2">{statusLabel}</h2>
               <p className="text-stone-600 dark:text-stone-300 text-sm md:text-base">
-                {rp?.summary || (hasAnyData ? 'View your combined recommendations.' : 'Complete a disease scan or soil analysis to get started.')}
+                {rp?.summary || (hasAnyData ? t('dashboard.viewRecs') : t('dashboard.getStarted'))}
               </p>
             </div>
             {hasAnyData && (
@@ -121,7 +123,7 @@ export default function Dashboard() {
                   <div className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 p-2 rounded-xl">
                     <Leaf size={20} />
                   </div>
-                  <span className="font-black">Disease</span>
+                  <span className="font-black">{t('dashboard.disease')}</span>
                 </div>
                 <ChevronRight size={18} className="text-stone-300 group-hover:text-red-500" />
               </div>
@@ -137,7 +139,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="mt-2 text-sm text-stone-500">
-                  No scan yet. Take a photo to check for disease.
+                  {t('dashboard.noScanYet')}
                 </div>
               )}
             </div>
@@ -152,16 +154,16 @@ export default function Dashboard() {
                   <div className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200 p-2 rounded-xl">
                     <Droplets size={20} />
                   </div>
-                  <span className="font-black">Soil</span>
+                  <span className="font-black">{t('dashboard.soil')}</span>
                 </div>
                 <ChevronRight size={18} className="text-stone-300 group-hover:text-amber-500" />
               </div>
               
               {soil ? (
                 <div>
-                  <h3 className="font-black text-lg truncate">{soil.predicted_soil_condition || 'Analysis available'}</h3>
+                  <h3 className="font-black text-lg truncate">{soil.predicted_soil_condition || t('dashboard.analysisAvailable')}</h3>
                   <p className="text-sm text-stone-500 mt-1 line-clamp-1">
-                    {soil.fertilizer_recommendation ? `Rec: ${soil.fertilizer_recommendation}` : 'Analysis completed'}
+                    {soil.fertilizer_recommendation ? `Rec: ${soil.fertilizer_recommendation}` : t('dashboard.analysisCompleted')}
                   </p>
                   <p className="text-xs text-stone-400 mt-1">
                     {new Date(soil.analysis_date).toLocaleDateString()}
@@ -169,7 +171,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="mt-2 text-sm text-stone-500">
-                  No analysis yet. Upload a report or check soil.
+                  {t('dashboard.noSoilYet')}
                 </div>
               )}
             </div>
@@ -184,7 +186,7 @@ export default function Dashboard() {
                   <div className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 p-2 rounded-xl">
                     <CloudSun size={20} />
                   </div>
-                  <span className="font-black">Weather</span>
+                  <span className="font-black">{t('dashboard.weather')}</span>
                 </div>
                 <ChevronRight size={18} className="text-stone-300 group-hover:text-blue-500" />
               </div>
@@ -203,7 +205,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="mt-2 text-sm text-stone-500">
-                  No data. Fetch current conditions for your farm.
+                  {t('dashboard.noWeatherYet')}
                 </div>
               )}
             </div>
@@ -212,13 +214,13 @@ export default function Dashboard() {
           {/* Quick Actions (Keep these handy) */}
           <div className="flex flex-wrap gap-3 mt-2">
             <button onClick={() => nav('/disease')} className="flex items-center gap-2 rounded-xl bg-red-700 px-5 py-2.5 text-sm font-black text-white hover:bg-red-800 transition-colors">
-              <ScanLine size={16} /> Scan Leaf
+              <ScanLine size={16} /> {t('dashboard.scanLeaf')}
             </button>
             <button onClick={() => nav('/soil')} className="flex items-center gap-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-5 py-2.5 text-sm font-black hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
-              <FlaskConical size={16} /> Check Soil
+              <FlaskConical size={16} /> {t('dashboard.checkSoil')}
             </button>
             <button onClick={() => nav('/weather')} className="flex items-center gap-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-5 py-2.5 text-sm font-black hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
-              <Wind size={16} /> View Weather
+              <Wind size={16} /> {t('dashboard.viewWeather')}
             </button>
           </div>
         </div>

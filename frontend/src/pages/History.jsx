@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { FileBarChart, Filter, Leaf, FlaskConical, CloudSun, Calendar } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Page from '../components/Page'
 import { getHistory } from '../lib/api'
 
 export default function History() {
+  const { t } = useTranslation()
   const [items, setItems] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -24,7 +26,7 @@ export default function History() {
       const data = await getHistory(type || null, fromIso, toIso)
       setItems(data)
     } catch (err) {
-      setError(err.message || 'Failed to load history')
+      setError(err.message || t('history.errorFailed'))
     } finally {
       setLoading(false)
     }
@@ -41,32 +43,32 @@ export default function History() {
     return <FileBarChart className="text-stone-500" />
   }
 
-  const labelForType = (t) => {
-    if (t === 'scan') return 'Disease Scan'
-    if (t === 'soil') return 'Soil Analysis'
-    if (t === 'weather') return 'Weather Record'
-    return 'Record'
+  const labelForType = (type) => {
+    if (type === 'scan') return t('history.diseaseScan')
+    if (type === 'soil') return t('history.soilAnalysis')
+    if (type === 'weather') return t('history.weatherRecord')
+    return t('history.record')
   }
 
   return (
-    <Page title="History" sub="View your past disease scans, soil analyses, and weather records.">
+    <Page title={t('history.title')} sub={t('history.sub')}>
       
       <div className="card p-5 mb-6 flex flex-col md:flex-row gap-4 items-end bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
         <div className="flex-1 w-full">
-          <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Record Type</label>
+          <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">{t('history.recordType')}</label>
           <select 
             value={type} 
             onChange={e => setType(e.target.value)}
             className="w-full rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-4 py-2"
           >
-            <option value="">All Records</option>
-            <option value="scan">Disease Scans</option>
-            <option value="soil">Soil Analyses</option>
-            <option value="weather">Weather Records</option>
+            <option value="">{t('history.allRecords')}</option>
+            <option value="scan">{t('history.diseaseScans')}</option>
+            <option value="soil">{t('history.soilAnalyses')}</option>
+            <option value="weather">{t('history.weatherRecords')}</option>
           </select>
         </div>
         <div className="flex-1 w-full">
-          <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">From Date</label>
+          <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">{t('history.fromDate')}</label>
           <input 
             type="date" 
             value={fromDate}
@@ -75,7 +77,7 @@ export default function History() {
           />
         </div>
         <div className="flex-1 w-full">
-          <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">To Date</label>
+          <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">{t('history.toDate')}</label>
           <input 
             type="date" 
             value={toDate}
@@ -89,19 +91,19 @@ export default function History() {
           className="w-full md:w-auto bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-xl font-bold flex items-center justify-center gap-2"
         >
           <Filter size={18} />
-          {loading ? 'Filtering...' : 'Apply Filters'}
+          {loading ? t('history.filtering') : t('history.applyFilters')}
         </button>
       </div>
 
       {error && <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-6">{error}</div>}
 
       {items === null || loading ? (
-        <div className="text-stone-500 text-center py-10">Loading history...</div>
+        <div className="text-stone-500 text-center py-10">{t('history.loadingHistory')}</div>
       ) : items.length === 0 ? (
         <div className="card p-10 text-center flex flex-col items-center">
           <FileBarChart className="text-stone-300 mb-4" size={48} />
-          <h3 className="text-xl font-bold mb-2">No records found</h3>
-          <p className="text-stone-500 max-w-md">Try adjusting your filters, or run a new scan, soil test, or weather check to generate history.</p>
+          <h3 className="text-xl font-bold mb-2">{t('history.noRecordsFound')}</h3>
+          <p className="text-stone-500 max-w-md">{t('history.noRecordsSub')}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -126,7 +128,7 @@ export default function History() {
                   item.details.severity === 'Moderate' ? 'bg-yellow-100 text-yellow-700' : 
                   'bg-green-100 text-green-700'
                 }`}>
-                  {item.details.severity} Severity
+                  {t('history.severity', { level: item.details.severity })}
                 </div>
               )}
             </div>

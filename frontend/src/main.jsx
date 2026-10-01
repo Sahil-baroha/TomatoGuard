@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { registerSW } from 'virtual:pwa-register'
 import './index.css'
+import './i18n/index.js'
 import App from './App.jsx'
 
 // Apply saved theme before first paint

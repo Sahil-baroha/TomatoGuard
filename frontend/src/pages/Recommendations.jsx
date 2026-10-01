@@ -5,12 +5,14 @@ import {
   ShieldCheck, ShieldAlert, ShieldX, ArrowLeft, LoaderCircle,
   Database
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Page from '../components/Page'
 import { getRecommendations } from '../lib/api'
 
 // ── Health banner ────────────────────────────────────────────────────────────
 
 function HealthBanner({ status }) {
+  const { t } = useTranslation()
   if (!status) return null
   const cfg = {
     good:     { icon: ShieldCheck, bg: 'bg-green-50 border-green-200',  text: 'text-green-800',  label: 'Crop Health: Good',     sub: 'No critical issues detected.' },
@@ -74,6 +76,7 @@ function DataSourceCard({ title, children, missing }) {
 }
 
 function DataUsedSection({ dataUsed }) {
+  const { t } = useTranslation()
   if (!dataUsed) return null
   const d = dataUsed
   const fmt = (val, unit = '') => val != null ? `${val}${unit}` : null
@@ -83,13 +86,13 @@ function DataUsedSection({ dataUsed }) {
       <div className="flex items-center gap-3 mb-5 pb-3 border-b border-stone-100 dark:border-stone-800">
         <Database className="text-stone-400" size={20} />
         <div>
-          <h3 className="font-black">Data used for this recommendation</h3>
-          <p className="text-xs text-stone-400 mt-0.5">Raw source figures — exactly what the computation read. Not modified or interpolated.</p>
+          <h3 className="font-black">{t('recommendations.dataUsedTitle')}</h3>
+          <p className="text-xs text-stone-400 mt-0.5">{t('recommendations.dataUsedSub')}</p>
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         {/* Disease source */}
-        <DataSourceCard title="Latest Disease Scan" missing={!d.disease ? 'No disease scan on record.' : null}>
+        <DataSourceCard title={t('recommendations.latestDiseaseScan')} missing={!d.disease ? t('recommendations.noDiseaseScanRecord') : null}>
           {d.disease && <>
             <DataRow label="Disease" value={d.disease.predicted_disease} />
             <DataRow label="Confidence" value={fmt(d.disease.confidence != null ? Math.round(d.disease.confidence) : null, '%')} />
@@ -99,7 +102,7 @@ function DataUsedSection({ dataUsed }) {
         </DataSourceCard>
 
         {/* Soil source */}
-        <DataSourceCard title="Latest Soil Analysis" missing={!d.soil ? 'No soil analysis on record.' : null}>
+        <DataSourceCard title={t('recommendations.latestSoilAnalysis')} missing={!d.soil ? t('recommendations.noSoilRecord') : null}>
           {d.soil && <>
             <DataRow label="pH" value={d.soil.ph} />
             <DataRow label="Nitrogen" value={fmt(d.soil.nitrogen, ' kg/ha')} />
@@ -113,7 +116,7 @@ function DataUsedSection({ dataUsed }) {
         </DataSourceCard>
 
         {/* Weather source */}
-        <DataSourceCard title="Latest Weather Record" missing={!d.weather ? 'No weather record on record.' : null}>
+        <DataSourceCard title={t('recommendations.latestWeatherRecord')} missing={!d.weather ? t('recommendations.noWeatherRecord') : null}>
           {d.weather && <>
             <DataRow label="Temperature" value={fmt(d.weather.temperature_c, '°C')} />
             <DataRow label="Humidity" value={fmt(d.weather.humidity_percent, '%')} />
@@ -131,6 +134,7 @@ function DataUsedSection({ dataUsed }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function Recommendations() {
+  const { t } = useTranslation()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -145,7 +149,7 @@ export default function Recommendations() {
         if (err.status === 404) {
           setIs404(true)
         } else {
-          setError(err.message || 'Failed to load recommendations.')
+          setError(err.message || t('recommendations.errorFailed'))
         }
       })
   }, [])
@@ -155,13 +159,13 @@ export default function Recommendations() {
       onClick={() => nav('/dashboard')}
       className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-bold hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900"
     >
-      <ArrowLeft size={16} /> Back to Dashboard
+      <ArrowLeft size={16} /> {t('recommendations.backToDashboard')}
     </button>
   )
 
   if (loading) {
     return (
-      <Page title="Recommendations" action={backBtn}>
+      <Page title={t('recommendations.title')} action={backBtn}>
         <div className="flex justify-center py-16">
           <LoaderCircle className="animate-spin text-red-700" size={36} />
         </div>
@@ -171,23 +175,22 @@ export default function Recommendations() {
 
   if (is404) {
     return (
-      <Page title="Recommendations" action={backBtn}>
+      <Page title={t('recommendations.title')} action={backBtn}>
         <div className="card p-10 text-center max-w-xl mx-auto">
           <Sprout className="text-stone-300 mx-auto mb-4" size={48} />
-          <h3 className="text-xl font-black mb-2">No data yet</h3>
+          <h3 className="text-xl font-black mb-2">{t('recommendations.noDataYet')}</h3>
           <p className="text-stone-500 mb-6">
-            Recommendations are generated from your latest disease scan, soil analysis, and weather check.
-            Complete at least one of these to get started.
+            {t('recommendations.noDataSub')}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <button onClick={() => nav('/disease')} className="rounded-xl bg-red-700 px-5 py-2 text-sm font-bold text-white hover:bg-red-800">
-              Run Disease Scan
+              {t('recommendations.runDiseaseScan')}
             </button>
             <button onClick={() => nav('/soil')} className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700">
-              Soil Analysis
+              {t('recommendations.soilAnalysis')}
             </button>
             <button onClick={() => nav('/weather')} className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white hover:bg-blue-700">
-              Check Weather
+              {t('recommendations.checkWeather')}
             </button>
           </div>
         </div>
@@ -197,7 +200,7 @@ export default function Recommendations() {
 
   if (error) {
     return (
-      <Page title="Recommendations" action={backBtn}>
+      <Page title={t('recommendations.title')} action={backBtn}>
         <div className="bg-red-50 text-red-700 p-5 rounded-2xl">{error}</div>
       </Page>
     )
@@ -211,8 +214,8 @@ export default function Recommendations() {
 
   return (
     <Page
-      title="Crop Recommendations"
-      sub="Generated fresh from your latest scan, soil analysis, and weather data."
+      title={t('recommendations.title')}
+      sub={t('recommendations.sub')}
       action={backBtn}
     >
       {/* Health banner */}
@@ -220,38 +223,38 @@ export default function Recommendations() {
         <HealthBanner status={d.health_status} />
       ) : (
         <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 mb-6 text-stone-500 text-sm">
-          Health status unavailable — complete a disease scan and soil analysis to enable this.
+          {t('recommendations.healthUnavailable')}
         </div>
       )}
 
       <div className="grid gap-5 md:grid-cols-2">
         <Section
           icon={Leaf}
-          title="Disease Treatment"
+          title={t('recommendations.diseaseTreatment')}
           color="text-red-700"
           content={diseaseTreatmentContent}
-          missing={!d.disease_treatment ? 'No disease scan on record yet. Run a scan to get treatment advice.' : undefined}
+          missing={!d.disease_treatment ? t('recommendations.noDiseaseScan') : undefined}
         />
         <Section
           icon={FlaskConical}
-          title="Fertilizer Advice"
+          title={t('recommendations.fertilizerAdvice')}
           color="text-amber-600"
           content={d.fertilizer_advice}
-          missing={!d.fertilizer_advice ? 'No soil analysis on record yet. Run a soil test to get fertilizer advice.' : undefined}
+          missing={!d.fertilizer_advice ? t('recommendations.noSoilForFertilizer') : undefined}
         />
         <Section
           icon={Droplets}
-          title="Irrigation Advice"
+          title={t('recommendations.irrigationAdvice')}
           color="text-blue-600"
           content={d.irrigation_advice}
-          missing={!d.irrigation_advice ? 'No soil analysis on record yet. Run a soil test to get irrigation advice.' : undefined}
+          missing={!d.irrigation_advice ? t('recommendations.noSoilForIrrigation') : undefined}
         />
         <Section
           icon={Bug}
-          title="Pest Prevention"
+          title={t('recommendations.pestPrevention')}
           color="text-orange-600"
           content={d.pest_prevention}
-          missing={!d.pest_prevention ? 'Pest prevention tips unavailable.' : undefined}
+          missing={!d.pest_prevention ? t('recommendations.noPestPrevention') : undefined}
         />
       </div>
 
@@ -259,7 +262,7 @@ export default function Recommendations() {
       <div className="mt-5">
         <Section
           icon={Sprout}
-          title="General Crop Management"
+          title={t('recommendations.generalCropMgmt')}
           color="text-green-700"
           content={d.general_crop_management}
         />
@@ -269,7 +272,7 @@ export default function Recommendations() {
       <DataUsedSection dataUsed={d.data_used} />
 
       <p className="mt-6 text-xs text-stone-400 text-center">
-        Recommendations are generated on-demand from your latest data and are not stored. Refresh this page to update.
+        {t('recommendations.footer')}
       </p>
     </Page>
   )
