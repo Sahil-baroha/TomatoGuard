@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -51,6 +51,15 @@ class DataUsed(BaseModel):
     weather: Optional[DataUsedWeather] = None
 
 
+class IrrigationDay(BaseModel):
+    """One day in the 5-day irrigation schedule — computed, not stored."""
+    date: str                         # ISO date string e.g. "2026-10-05"
+    action: str                       # "Skip", "Reduce", "Normal", "Increase"
+    reason: str                       # Traceable explanation (1 sentence)
+    rainfall_mm: Optional[float] = None
+    temperature_max_c: Optional[float] = None
+
+
 class RecommendationsResponse(BaseModel):
     # None/absent means all relevant data is missing — not fabricated "good"
     health_status: Optional[str] = None  # "good" | "at-risk" | "critical"
@@ -60,3 +69,4 @@ class RecommendationsResponse(BaseModel):
     pest_prevention: Optional[str] = None
     general_crop_management: str  # always present — static text
     data_used: Optional[DataUsed] = None  # Bug 5: source figures transparency
+    irrigation_schedule: Optional[List[IrrigationDay]] = None  # 5-day plan, null if no farm coords

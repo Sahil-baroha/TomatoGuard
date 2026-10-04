@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Literal
+from typing import Optional, Literal, Dict
 from datetime import datetime
 
 
@@ -15,6 +15,8 @@ class DiseaseAnalyzeResponse(BaseModel):
     treatment_plan: Optional[str]         # Biological/chemical/organic steps
     prevention_tips: Optional[str]        # Long-term recurrence prevention
     low_confidence_warning: bool = False  # True when confidence < 60%
+    # ── All-class probabilities (fresh-scan transparency chart, NOT stored in DB)
+    class_probabilities: Optional[Dict[str, float]] = None
 
 
 class DiseaseHistoryItem(BaseModel):

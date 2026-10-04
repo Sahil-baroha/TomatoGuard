@@ -4,11 +4,88 @@ import {
   AlertTriangle, Leaf, FlaskConical, PlusCircle, LoaderCircle
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer, ReferenceLine } from 'recharts'
 import Page from '../components/Page'
 import {
   uploadSoilReport, confirmSoilReport, submitSoilQuestionnaire, getSoilLatest, clearTokens,
 } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
+
+// ── Soil nutrient range chart ─────────────────────────────────────────────────
+// Healthy/optimal ranges used for reference lines:
+//   pH: 5.5–7.0 (ideal tomato range per FAO guidelines)
+//   Nitrogen: 100–200 kg/ha
+//   Phosphorus: 20–60 kg/ha
+//   Potassium: 100–200 kg/ha
+//   Moisture: 40–70%
+//   Organic matter: 2–5%
+const SOIL_RANGES = {
+  pH:              { min: 5.5, max: 7.0, unit: '' },
+  Nitrogen:        { min: 100, max: 200, unit: ' kg/ha' },
+  Phosphorus:      { min: 20,  max: 60,  unit: ' kg/ha' },
+  Potassium:       { min: 100, max: 200, unit: ' kg/ha' },
+  Moisture:        { min: 40,  max: 70,  unit: '%' },
+  'Organic Matter':{ min: 2,   max: 5,   unit: '%' },
+}
+
+function SoilNutrientChart({ analysis }) {
+  const data = [
+    { name: 'pH',              value: analysis.ph,             ...SOIL_RANGES['pH'] },
+    { name: 'Nitrogen',        value: analysis.nitrogen,       ...SOIL_RANGES['Nitrogen'] },
+    { name: 'Phosphorus',      value: analysis.phosphorus,     ...SOIL_RANGES['Phosphorus'] },
+    { name: 'Potassium',       value: analysis.potassium,      ...SOIL_RANGES['Potassium'] },
+    { name: 'Moisture',        value: analysis.moisture,       ...SOIL_RANGES['Moisture'] },
+    { name: 'Organic Matter',  value: analysis.organic_matter, ...SOIL_RANGES['Organic Matter'] },
+  ].filter(d => d.value != null)
+
+  if (data.length === 0) return null
+
+  const getColor = (d) => {
+    if (d.value < d.min) return '#dc2626'   // below range → red
+    if (d.value > d.max) return '#f59e0b'   // above range → amber
+    return '#16a34a'                         // in range → green
+  }
+
+  return (
+    <div className="mt-5 rounded-2xl bg-white/10 p-4">
+      <p className="mb-1 text-xs font-black uppercase tracking-widest text-green-300">Nutrient Snapshot vs. Optimal Range</p>
+      <p className="mb-3 text-xs text-green-200/70">
+        <span className="font-bold" style={{color:'#16a34a'}}>Green</span> = in range ·{' '}
+        <span className="font-bold" style={{color:'#dc2626'}}>Red</span> = below range ·{' '}
+        <span className="font-bold" style={{color:'#f59e0b'}}>Amber</span> = above range
+      </p>
+      <div className="flex flex-col gap-3">
+        {data.map(d => {
+          const pct = Math.min((d.value / (d.max * 1.4)) * 100, 100)
+          const minPct = Math.min((d.min / (d.max * 1.4)) * 100, 100)
+          const maxPct = Math.min((d.max / (d.max * 1.4)) * 100, 100)
+          const color = getColor(d)
+          return (
+            <div key={d.name}>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-green-200">{d.name}</span>
+                <span className="font-bold" style={{ color }}>{d.value}{d.unit} <span className="text-green-200/50 font-normal">(range {d.min}–{d.max}{d.unit})</span></span>
+              </div>
+              <div className="relative h-3 rounded-full bg-white/10">
+                {/* Optimal range band */}
+                <div
+                  className="absolute h-3 rounded-full bg-green-500/20"
+                  style={{ left: `${minPct}%`, width: `${maxPct - minPct}%` }}
+                />
+                {/* Actual value bar */}
+                <div
+                  className="absolute h-3 rounded-full transition-all"
+                  style={{ width: `${pct}%`, backgroundColor: color, opacity: 0.85 }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 
 // ── Shared analysis result panel ──────────────────────────────────────────────
 
@@ -37,6 +114,7 @@ function AnalysisResultPanel({ analysis, emptyMessage }) {
               )}
             </div>
           )}
+          <SoilNutrientChart analysis={analysis} />
           {analysis.fertilizer_recommendation && (
             <div className="mt-5 rounded-2xl bg-white/10 p-5">
               <p className="mb-2 text-xs font-black uppercase tracking-widest text-green-300">{t('soil.fertilizerRec')}</p>

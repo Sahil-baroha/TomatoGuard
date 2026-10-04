@@ -86,6 +86,10 @@ async def analyze_disease(
 
     # ── Step 4: Run model inference ───────────────────────────────────────────
     display_name, confidence = disease_model.predict(file_bytes)
+    # Fetch all-class probabilities for the fresh-scan transparency chart.
+    # predict_all() runs a second forward pass with the same bytes — acceptable
+    # since it is only called once per analyze request. Not stored in DB.
+    class_probabilities = disease_model.predict_all(file_bytes) or None
 
     # ── Step 5: Reject low-confidence predictions — NO DB row ────────────────
     if confidence is None or confidence < CONFIDENCE_THRESHOLD:
@@ -144,6 +148,7 @@ async def analyze_disease(
         treatment_plan=tier["recommendation"],
         prevention_tips=kb.get("prevention_tips"),
         low_confidence_warning=False,  # Passed the 70% gate — no warning needed
+        class_probabilities=class_probabilities,
     )
 
 

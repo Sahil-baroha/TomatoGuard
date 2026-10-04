@@ -13,7 +13,8 @@ Partial result returned if 1 or 2 of the three exist.
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
+import logging
 
 from app.core.db import get_db
 from app.core.security import get_current_user
@@ -25,9 +26,12 @@ from app.models.weather_record import WeatherRecord
 from app.schemas.recommendations import (
     RecommendationsResponse, DiseaseSection,
     DataUsed, DataUsedDisease, DataUsedSoil, DataUsedWeather,
+    IrrigationDay,
 )
+from app.services import weather_client
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # ── Agronomic bounds used for health_status "at-risk" nutrient check ──────────
 # Source: widely cited PlantVillage / FAO tomato production guidelines.
@@ -150,6 +154,91 @@ def _compute_health_status(
     return "good"
 
 
+# ── Diseases that spread via water contact (overhead / foliar irrigation risk) ─
+# If any of these are the active scan, recommend drip/root-zone only.
+_WATER_SPREAD_DISEASES = {
+    "Bacterial Spot", "Early Blight", "Late Blight",
+    "Leaf Mold", "Septoria Leaf Spot", "Target Spot",
+}
+
+def _compute_irrigation_schedule(
+    farm: Farm,
+    soil: Optional[SoilAnalysis],
+    scan: Optional[DiseaseScan],
+) -> Optional[List[IrrigationDay]]:
+    """
+    Compute a 5-day day-by-day irrigation schedule.
+
+    Logic (all rules are explicit and traceable):
+    1. Fetch 5-day forecast from Open-Meteo using farm's lat/lng.
+       If farm has no coordinates, return None (no schedule possible).
+    2. For each day:
+       - >= 5 mm rainfall  → Skip irrigation (sufficient natural water).
+       - >= 2.5 mm rainfall → Reduce irrigation (partial natural water).
+       - Soil moisture available and > 70% → Reduce (already moist).
+       - Soil moisture available and < 25% → Increase (critically dry).
+       - Temp max > 35°C with no rain → Increase (high evaporation day).
+       - Active water-spread disease detected → annotate that drip is preferred.
+       - Otherwise → Normal irrigation.
+    All reasoning is surfaced in the `reason` field so farmers/evaluators
+    can verify the logic, not just accept the verdict.
+    """
+    if farm.latitude is None or farm.longitude is None:
+        return None
+
+    try:
+        forecast_days = weather_client.get_forecast(
+            float(farm.latitude), float(farm.longitude)
+        )
+    except Exception as exc:
+        logger.warning("Could not fetch forecast for irrigation schedule: %s", exc)
+        return None
+
+    moisture = float(soil.moisture) if (soil and soil.moisture is not None) else None
+    active_disease = scan.predicted_disease if scan else None
+    water_spread = active_disease in _WATER_SPREAD_DISEASES if active_disease else False
+
+    schedule: List[IrrigationDay] = []
+    for day in forecast_days:
+        rain = day.get("precipitation_mm") or 0.0
+        temp_max = day.get("temperature_max_c")
+        date_str = day.get("date", "")
+
+        # Determine base action from rainfall
+        if rain >= 5.0:
+            action = "Skip"
+            reason = f"{rain:.1f} mm of rainfall forecast — natural water is sufficient, skip irrigation."
+        elif rain >= 2.5:
+            action = "Reduce"
+            reason = f"{rain:.1f} mm of rainfall forecast — reduce irrigation to about half the normal dose."
+        elif moisture is not None and moisture > 70:
+            action = "Reduce"
+            reason = f"Soil moisture currently at {moisture:.0f}% — field is already moist, reduce irrigation."
+        elif moisture is not None and moisture < 25:
+            action = "Increase"
+            reason = f"Soil moisture critically low at {moisture:.0f}% — increase irrigation to restore field capacity."
+        elif temp_max is not None and temp_max > 35 and rain < 1.0:
+            action = "Increase"
+            reason = f"High-temperature day ({temp_max}°C) with no forecast rain — increase irrigation to offset evaporation."
+        else:
+            action = "Normal"
+            reason = "No exceptional conditions — apply standard irrigation dose."
+
+        # Append water-spread disease advisory (doesn't change action, adds guidance)
+        if water_spread and action != "Skip":
+            reason += f" Active {active_disease} detected: use drip/root-zone irrigation only — avoid overhead watering."
+
+        schedule.append(IrrigationDay(
+            date=date_str,
+            action=action,
+            reason=reason,
+            rainfall_mm=rain if rain > 0 else None,
+            temperature_max_c=temp_max,
+        ))
+
+    return schedule if schedule else None
+
+
 @router.get("/latest", response_model=RecommendationsResponse)
 def get_recommendations(
     current_user: User = Depends(get_current_user),
@@ -263,6 +352,9 @@ def get_recommendations(
         ) if weather else None,
     )
 
+    # 6. Irrigation schedule — 5-day plan, null if farm has no coordinates
+    irrigation_schedule = _compute_irrigation_schedule(farm, soil, scan) if farm else None
+
     return RecommendationsResponse(
         health_status=health_status,
         disease_treatment=disease_treatment,
@@ -271,4 +363,5 @@ def get_recommendations(
         pest_prevention=pest_prevention,
         general_crop_management=_GENERAL_CROP_MGMT,
         data_used=data_used,
+        irrigation_schedule=irrigation_schedule,
     )

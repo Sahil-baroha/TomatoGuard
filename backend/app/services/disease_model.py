@@ -141,6 +141,39 @@ class DiseaseModel:
             logger.error("Inference error: %s", exc)
             return (f"Inference error: {exc}", None)
 
+    def predict_all(self, image_bytes: bytes) -> dict[str, float]:
+        """
+        Run inference and return probabilities for ALL 10 classes.
+
+        Returns:
+            {clean_display_name: probability_pct} for every class.
+            Empty dict if model is not loaded.
+            NOT persisted to DB — used for fresh-scan transparency chart only.
+        """
+        if not self._loaded or self._model is None:
+            return {}
+
+        try:
+            import torch
+            import torch.nn.functional as F
+            from PIL import Image
+
+            img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+            tensor = self._transform(img).unsqueeze(0).to(self.device)
+
+            with torch.no_grad():
+                outputs = self._model(tensor)
+                probs = F.softmax(outputs, dim=1)[0]
+
+            return {
+                RAW_TO_DISPLAY[raw]: round(probs[i].item() * 100.0, 2)
+                for i, raw in enumerate(RAW_CLASSES)
+            }
+
+        except Exception as exc:
+            logger.error("predict_all inference error: %s", exc)
+            return {}
+
 
 # Module-level singleton — loaded once at startup, shared across all requests.
 disease_model = DiseaseModel()

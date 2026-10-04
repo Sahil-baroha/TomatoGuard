@@ -5,6 +5,10 @@ import {
   CloudSnow, CloudLightning, CloudDrizzle, Cloudy
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
+  CartesianGrid, ResponsiveContainer, Legend
+} from 'recharts'
 import Page from '../components/Page'
 import { getWeatherCurrent, getWeatherForecast, clearTokens } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
@@ -151,6 +155,53 @@ export default function Weather() {
               <ForecastCard key={i} day={day} />
             ))}
           </div>
+
+          {/* ── Temperature trend ── */}
+          {forecast.forecast.some(d => d.temperature_max_c != null) && (
+            <div className="mt-5 card p-5">
+              <p className="mb-1 text-xs font-black uppercase tracking-widest text-stone-400">Temperature Trend (°C)</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart
+                  data={forecast.forecast.map(d => ({
+                    day: d.date ? DAYS[new Date(d.date + 'T12:00:00').getDay()] : '—',
+                    Max: d.temperature_max_c,
+                    Min: d.temperature_min_c,
+                  }))}
+                  margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                  <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `${v}°`} />
+                  <Tooltip formatter={(v, n) => [`${v}°C`, n]} />
+                  <Legend />
+                  <Line type="monotone" dataKey="Max" stroke="#dc2626" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="Min" stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* ── Rainfall trend ── */}
+          {forecast.forecast.some(d => d.precipitation_mm != null) && (
+            <div className="mt-4 card p-5">
+              <p className="mb-1 text-xs font-black uppercase tracking-widest text-stone-400">Rainfall Forecast (mm)</p>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart
+                  data={forecast.forecast.map(d => ({
+                    day: d.date ? DAYS[new Date(d.date + 'T12:00:00').getDay()] : '—',
+                    Rain: d.precipitation_mm ?? 0,
+                  }))}
+                  margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                  <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `${v}mm`} />
+                  <Tooltip formatter={(v) => [`${v} mm`, 'Rainfall']} />
+                  <Bar dataKey="Rain" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
 

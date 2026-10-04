@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { UploadCloud, ScanLine, AlertTriangle, CheckCircle2, Trash2, Leaf, Clock, X, Image as ImageIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer } from 'recharts'
 import Page from '../components/Page'
 import { analyzeDisease, getDiseaseHistory, clearTokens } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
@@ -308,6 +309,40 @@ export default function Disease() {
           )}
         </div>
       </div>
+
+      {/* ── All-class probability chart (fresh-scan only, not persisted) ── */}
+      {result?.class_probabilities && Object.keys(result.class_probabilities).length > 0 && (
+        <div className="mt-5 card p-6">
+          <p className="mb-1 text-xs font-black uppercase tracking-widest text-stone-400">Model Decision Breakdown</p>
+          <p className="mb-4 text-sm text-stone-500">
+            All 10 class probabilities — shows how confidently the model ruled out alternatives.{' '}
+            <span className="font-bold text-red-700">Red bar</span> = predicted class.
+          </p>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart
+              layout="vertical"
+              data={Object.entries(result.class_probabilities)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, prob]) => ({ name, prob }))}
+              margin={{ top: 0, right: 20, left: 8, bottom: 0 }}
+            >
+              <XAxis type="number" domain={[0, 100]} tickFormatter={v => `${v}%`} tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" width={170} tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(v) => [`${v.toFixed(1)}%`, 'Probability']} />
+              <Bar dataKey="prob" radius={[0, 4, 4, 0]}>
+                {Object.entries(result.class_probabilities)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([name]) => (
+                    <Cell
+                      key={name}
+                      fill={name === result.predicted_disease ? '#b91c1c' : '#d6d3d1'}
+                    />
+                  ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* ── Scan history (Bug 2: clickable cards) ── */}
       <div className="mt-8">
