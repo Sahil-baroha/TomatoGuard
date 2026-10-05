@@ -135,11 +135,21 @@ export async function uploadSoilReport(file) {
   const body = new FormData()
   body.append('image', file)
 
-  const res = await fetch(`${BACKEND}/soil/report`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${tokens.access_token}` },
-    body,
-  })
+  let res
+  try {
+    res = await fetch(`${BACKEND}/soil/report`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+      body,
+    })
+  } catch (networkErr) {
+    // TypeError "Failed to fetch" = connection refused / timeout (Render cold start)
+    throw Object.assign(
+      new Error('COLD_START'),
+      { status: 0 }
+    )
+  }
+
   if (!res.ok) {
     let detail = `Request failed (${res.status})`
     try { const j = await res.json(); detail = j.detail || JSON.stringify(j) } catch {}

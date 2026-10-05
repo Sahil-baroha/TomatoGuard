@@ -190,7 +190,11 @@ function UploadTab() {
       setMsg({ ok: true, text: t('soil.ocrUploadSuccess') })
     } catch (err) {
       if (err.status === 401 || err.status === 403) { clearTokens(); nav('/login', { replace: true }); return }
-      setMsg({ ok: false, text: err.message || t('soil.errorUploadFailed') })
+      if (err.message === 'COLD_START') {
+        setMsg({ ok: false, text: 'cold_start', retry: true })
+      } else {
+        setMsg({ ok: false, text: err.message || t('soil.errorUploadFailed') })
+      }
     } finally { setUploading(false) }
   }
 
@@ -308,12 +312,24 @@ function UploadTab() {
           </div>
         )}
 
-        {msg && (
+        {msg && msg.text === 'cold_start' ? (
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800">
+            <p className="font-black mb-1">⏳ Server is warming up</p>
+            <p className="mb-3">The backend takes up to 30–60 s to wake from sleep. Your file is ready — wait a moment then click <strong>Try again</strong>.</p>
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="rounded-lg bg-amber-700 px-4 py-2 text-xs font-black text-white disabled:opacity-50"
+            >
+              {uploading ? 'Retrying…' : 'Try again'}
+            </button>
+          </div>
+        ) : msg ? (
           <div className={`flex gap-3 rounded-xl p-4 text-sm ${msg.ok ? 'bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-300' : 'bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-300'}`}>
             {msg.ok ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
             <p>{msg.text}</p>
           </div>
-        )}
+        ) : null}
       </div>
 
       <AnalysisResultPanel analysis={analysis} emptyMessage={t('soil.subNew')} />
