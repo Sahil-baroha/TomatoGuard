@@ -77,10 +77,13 @@ class DiseaseModel:
                                      std=[0.229, 0.224, 0.225]),
             ])
 
-            # Resolve absolute path: backend/app/services -> ../../../docs/
+            # Resolve path: backend/app/services/ -> ../../model/
+            # Resolves to backend/model/ locally and /app/model/ in Docker.
+            # The old ../../../docs/ path is outside Render's Docker build context
+            # (rootDir: backend) so the model was never present in the container.
             current_dir = os.path.dirname(os.path.abspath(__file__))
             model_path = os.path.abspath(
-                os.path.join(current_dir, f"../../../docs/{MODEL_FILENAME}")
+                os.path.join(current_dir, f"../../model/{MODEL_FILENAME}")
             )
 
             if os.path.exists(model_path):

@@ -29,3 +29,4 @@ check_tables.js
 *.pth
 
 !docs/tomato_model_valid.pth
+!backend/model/tomato_model_valid.pth
